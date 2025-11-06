@@ -128,24 +128,25 @@
       </div>
     </div>
 
-    <!-- DISPONIBILIDAD -->
-    <div id="disponibilidadCard" class="card hidden">
-      <h2>📊 Disponibilidad actual</h2>
-      <table id="tabla-stock">
-        <thead>
-          <tr>
-            <th>Proveedor</th>
-            <th>Acuerdo de Stock</th>
-            <th>Disponibilidad</th>
-            <th>Puerto</th>
-            <th>Fecha</th>
-            <th>Usuario</th>
-            <th>TN</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+   <!-- DISPONIBILIDAD -->
+<div id="disponibilidadCard" class="card hidden">
+  <h2>📊 Disponibilidad actual</h2>
+  <table id="tabla-stock">
+    <thead>
+      <tr>
+        <th>Proveedor</th>
+        <th>Acuerdo de Stock</th>
+        <th>Disponibilidad</th>
+        <th>Puerto</th>
+        <th>Fecha</th>
+        <th>Usuario</th>
+        <th>TN</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
     <!-- EXCEPCIONES -->
     <div id="excepcionesCard" class="card">
@@ -244,29 +245,46 @@
     });
 
     // ======== CARGAR DATOS ========
-    async function cargarDatos(puerto, fecha) {
-      tablaBody.innerHTML = "";
-      const snapshot = await getDocs(collection(db, "proveedores"));
-      let encontrado = false;
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
-        if ((!puerto || d.puerto === puerto) && (!fecha || d.fecha === fecha)) {
-          encontrado = true;
-          const fila = `
-            <tr>
-              <td>${d.proveedor}</td>
-              <td>${d.acuerdo || 0}</td>
-              <td>${d.disponibilidad || 0}</td>
-              <td>${d.puerto || ""}</td>
-              <td>${d.fecha || ""}</td>
-              <td>${d.usuario || ""}</td>
-              <td>${d.tn || ""}</td>
-            </tr>`;
-          tablaBody.innerHTML += fila;
-        }
-      });
-      disponibilidadCard.classList.toggle("hidden", !encontrado);
+async function cargarDatos(puerto, fecha) {
+  tablaBody.innerHTML = "";
+  const snapshot = await getDocs(collection(db, "proveedores"));
+  let encontrado = false;
+  snapshot.forEach(docSnap => {
+    const d = docSnap.data();
+    if ((!puerto || d.puerto === puerto) && (!fecha || d.fecha === fecha)) {
+      encontrado = true;
+      const fila = `
+        <tr>
+          <td>${d.proveedor}</td>
+          <td>${d.acuerdo || 0}</td>
+          <td>${d.disponibilidad || 0}</td>
+          <td>${d.puerto || ""}</td>
+          <td>${d.fecha || ""}</td>
+          <td>${d.usuario || ""}</td>
+          <td>${d.tn || ""}</td>
+          <td><button class="btnEliminarProv" data-id="${docSnap.id}" style="background:#dc3545;">❌</button></td>
+        </tr>`;
+      tablaBody.innerHTML += fila;
     }
+  });
+  disponibilidadCard.classList.toggle("hidden", !encontrado);
+}
+
+// ======== ELIMINAR PROVEEDOR ========
+document.addEventListener("click", async e => {
+  if (e.target.classList.contains("btnEliminarProv")) {
+    const id = e.target.dataset.id;
+    const confirmar = confirm("¿Seguro que quieres eliminar este proveedor?");
+    if (confirmar) {
+      await deleteDoc(doc(db, "proveedores", id));
+      e.target.closest("tr").remove();
+      alert("🗑️ Registro eliminado correctamente.");
+      const hayFilas = tablaBody.querySelectorAll("tr").length > 0;
+      if (!hayFilas) disponibilidadCard.classList.add("hidden");
+    }
+  }
+});
+
 
     // ======== LIMPIAR CAMPOS ========
     document.getElementById("btnLimpiarPrincipal").addEventListener("click", () => {
