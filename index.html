@@ -4,85 +4,176 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestión de Stock de Transportes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #f3f6fc;
+      --card: #ffffff;
+      --primary: #007bff;
+      --primary-hover: #0056b3;
+      --text: #333;
+      --border: #e0e6ef;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      background-color: #f9f9f9;
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      margin: 0;
+      padding: 0;
+      color: var(--text);
     }
+
+    header {
+      background-color: var(--primary);
+      color: #fff;
+      padding: 1rem 2rem;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    main {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
     h1 {
-      color: #333;
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
     }
+
+    .card {
+      background-color: var(--card);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      margin-bottom: 2rem;
+    }
+
+    input, button {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      margin: 6px;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
+    }
+
+    button {
+      background-color: var(--primary);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
-      background-color: #fff;
+      margin-top: 1rem;
     }
+
     th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
+      border-bottom: 1px solid var(--border);
+      padding: 10px;
+      text-align: left;
     }
+
     th {
-      background-color: #eee;
+      background-color: #f0f4fa;
+      font-weight: 600;
     }
-    .form-container {
-      background-color: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      margin-bottom: 30px;
+
+    tr:hover {
+      background-color: #f9fbff;
     }
-    input, button {
-      padding: 8px;
-      margin: 4px;
+
+    @media (max-width: 700px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      thead tr {
+        display: none;
+      }
+      tbody tr {
+        background-color: var(--card);
+        margin-bottom: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      }
+      td {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border: none;
+      }
+      td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--primary);
+      }
     }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      color: #888;
+      font-size: 0.9rem;
     }
   </style>
 </head>
 
 <body>
-  <h1>📦 Gestión de Stock de Transportes</h1>
+  <header>
+    <h1>📦 Gestión de Stock de Transportes</h1>
+  </header>
 
-  <div class="form-container">
-    <h3>➕ Añadir / ➖ Reducir stock</h3>
-    <input type="text" id="proveedor" placeholder="Proveedor" required>
-    <input type="number" id="cantidad" placeholder="Cantidad (+ o -)">
-    <input type="date" id="fecha" required>
-    <input type="text" id="puerto" placeholder="Puerto">
-    <input type="text" id="usuario" placeholder="Usuario">
-    <button id="btnGuardar">Guardar cambios</button>
-  </div>
+  <main>
+    <div class="card">
+      <h2>➕ Añadir / ➖ Reducir stock</h2>
+      <div>
+        <input type="text" id="proveedor" placeholder="Proveedor" required>
+        <input type="number" id="cantidad" placeholder="Cantidad (+ o -)">
+        <input type="date" id="fecha" required>
+        <input type="text" id="puerto" placeholder="Puerto">
+        <input type="text" id="usuario" placeholder="Usuario">
+        <button id="btnGuardar">Guardar cambios</button>
+      </div>
+    </div>
 
-  <h3>📊 Stock actual:</h3>
-  <table id="tabla-stock">
-    <thead>
-      <tr>
-        <th>Proveedor</th>
-        <th>Stock</th>
-        <th>Puerto</th>
-        <th>Fecha</th>
-        <th>Último usuario</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <div class="card">
+      <h2>📊 Stock actual</h2>
+      <table id="tabla-stock">
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Stock</th>
+            <th>Puerto</th>
+            <th>Fecha</th>
+            <th>Último usuario</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer>Desarrollado por Hugo 🧠 | Firebase + Netlify</footer>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, addDoc, query, where, updateDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    // 🔥 Tu configuración Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyC8qPpRUTOP5Ef7pf4DYXkTCZnTWVQwHHU",
       authDomain: "gestion-stock-transportes.firebaseapp.com",
@@ -98,7 +189,6 @@
     const tablaBody = document.querySelector("#tabla-stock tbody");
     const btnGuardar = document.getElementById("btnGuardar");
 
-    // 📥 Cargar datos al iniciar
     async function cargarDatos() {
       tablaBody.innerHTML = "";
       const snapshot = await getDocs(collection(db, "proveedores"));
@@ -106,17 +196,16 @@
         const d = doc.data();
         const fila = `
           <tr>
-            <td>${d.proveedor}</td>
-            <td>${d.stock ?? 0}</td>
-            <td>${d.puerto ?? ""}</td>
-            <td>${d.fecha ?? ""}</td>
-            <td>${d.usuario ?? ""}</td>
+            <td data-label="Proveedor">${d.proveedor}</td>
+            <td data-label="Stock">${d.stock ?? 0}</td>
+            <td data-label="Puerto">${d.puerto ?? ""}</td>
+            <td data-label="Fecha">${d.fecha ?? ""}</td>
+            <td data-label="Usuario">${d.usuario ?? ""}</td>
           </tr>`;
         tablaBody.innerHTML += fila;
       });
     }
 
-    // ➕ / ➖ Guardar cambios
     btnGuardar.addEventListener("click", async () => {
       const proveedor = document.getElementById("proveedor").value.trim();
       const cantidad = parseInt(document.getElementById("cantidad").value);
@@ -125,7 +214,7 @@
       const usuario = document.getElementById("usuario").value.trim();
 
       if (!proveedor || isNaN(cantidad) || !fecha) {
-        alert("Por favor, rellena todos los campos obligatorios.");
+        alert("⚠️ Por favor, completa todos los campos obligatorios.");
         return;
       }
 
@@ -147,10 +236,10 @@
       });
 
       alert(`✅ Stock actualizado para ${proveedor}: ${nuevoStock}`);
+      document.querySelectorAll("input").forEach(i => i.value = "");
       cargarDatos();
     });
 
-    // Cargar al abrir
     cargarDatos();
   </script>
 </body>
