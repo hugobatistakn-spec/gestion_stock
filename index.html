@@ -14,6 +14,7 @@
       --text: #333;
       --border: #e0e6ef;
       --danger: #e63946;
+      --success: #06b66b;
     }
 
     body {
@@ -33,7 +34,7 @@
     }
 
     main {
-      max-width: 900px;
+      max-width: 950px;
       margin: 2rem auto;
       padding: 0 1rem;
     }
@@ -51,7 +52,7 @@
       margin-bottom: 2rem;
     }
 
-    input, button {
+    input, button, select {
       padding: 10px 14px;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -60,7 +61,7 @@
       margin: 6px;
     }
 
-    input:focus {
+    input:focus, select:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
     }
@@ -75,6 +76,22 @@
 
     button:hover {
       background-color: var(--primary-hover);
+    }
+
+    .danger-btn {
+      background-color: var(--danger);
+    }
+
+    .danger-btn:hover {
+      background-color: #b1222e;
+    }
+
+    .success-btn {
+      background-color: var(--success);
+    }
+
+    .success-btn:hover {
+      background-color: #049b59;
     }
 
     table {
@@ -98,30 +115,6 @@
       background-color: #f9fbff;
     }
 
-    @media (max-width: 700px) {
-      table, thead, tbody, th, td, tr {
-        display: block;
-      }
-      thead tr { display: none; }
-      tbody tr {
-        background-color: var(--card);
-        margin-bottom: 10px;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-      }
-      td {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px;
-        border: none;
-      }
-      td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: var(--primary);
-      }
-    }
-
     footer {
       text-align: center;
       padding: 1rem;
@@ -131,6 +124,14 @@
 
     .danger-title {
       color: var(--danger);
+    }
+
+    .search-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 1rem;
     }
   </style>
 </head>
@@ -154,9 +155,16 @@
       </div>
     </div>
 
-    <!-- 📊 Stock actual -->
+    <!-- 📊 Stock actual con búsqueda -->
     <div class="card">
       <h2>📊 Disponibilidad actual</h2>
+      <div class="search-bar">
+        <input type="text" id="buscarPuerto" placeholder="Buscar por puerto">
+        <input type="date" id="buscarFecha">
+        <button id="btnBuscar" class="success-btn">🔍 Buscar</button>
+        <button id="btnMostrarTodo">📋 Mostrar todo</button>
+      </div>
+
       <table id="tabla-stock">
         <thead>
           <tr>
@@ -177,8 +185,8 @@
       <div>
         <input type="text" id="exProveedor" placeholder="Proveedor" required>
         <input type="text" id="exCliente" placeholder="Cliente" required>
-        <input type="number" id="exCamiones" placeholder="Cantidad de camiones" required>
-        <button id="btnExcepcion">Registrar excepción</button>
+        <input type="number" id="exCamiones" placeholder="Cantidad (+ o -)" required>
+        <button id="btnExcepcion" class="success-btn">Registrar / Actualizar</button>
       </div>
 
       <table id="tabla-excepciones">
@@ -187,6 +195,7 @@
             <th>Proveedor</th>
             <th>Cliente</th>
             <th>Camiones</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -198,7 +207,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, getDoc, setDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC8qPpRUTOP5Ef7pf4DYXkTCZnTWVQwHHU",
@@ -215,12 +224,25 @@
     // === STOCK ===
     const tablaBody = document.querySelector("#tabla-stock tbody");
     const btnGuardar = document.getElementById("btnGuardar");
+    const btnBuscar = document.getElementById("btnBuscar");
+    const btnMostrarTodo = document.getElementById("btnMostrarTodo");
 
-    async function cargarDatos() {
+    async function cargarDatos(puertoFiltro = "", fechaFiltro = "") {
       tablaBody.innerHTML = "";
-      const snapshot = await getDocs(collection(db, "proveedores"));
+      const ref = collection(db, "proveedores");
+      let snapshot;
+
+      if (puertoFiltro || fechaFiltro) {
+        let q = query(ref);
+        if (puertoFiltro) q = query(ref, where("puerto", "==", puertoFiltro));
+        snapshot = await getDocs(q);
+      } else {
+        snapshot = await getDocs(ref);
+      }
+
       snapshot.forEach(doc => {
         const d = doc.data();
+        if (fechaFiltro && d.fecha !== fechaFiltro) return; // filtro adicional por fecha
         const fila = `
           <tr>
             <td data-label="Proveedor">${d.proveedor}</td>
@@ -254,19 +276,19 @@
         nuevoStock = (datos.stock || 0) + cantidad;
       }
 
-      await setDoc(ref, {
-        proveedor,
-        stock: nuevoStock,
-        fecha,
-        puerto,
-        usuario
-      });
-
+      await setDoc(ref, { proveedor, stock: nuevoStock, fecha, puerto, usuario });
       alert(`✅ Stock actualizado para ${proveedor}: ${nuevoStock}`);
       document.querySelectorAll("input").forEach(i => i.value = "");
       cargarDatos();
     });
 
+    btnBuscar.addEventListener("click", async () => {
+      const puerto = document.getElementById("buscarPuerto").value.trim();
+      const fecha = document.getElementById("buscarFecha").value;
+      cargarDatos(puerto, fecha);
+    });
+
+    btnMostrarTodo.addEventListener("click", () => cargarDatos());
     cargarDatos();
 
     // === EXCEPCIONES ===
@@ -276,17 +298,26 @@
     async function cargarExcepciones() {
       tablaExc.innerHTML = "";
       const snapshot = await getDocs(collection(db, "excepciones"));
-      snapshot.forEach(doc => {
-        const d = doc.data();
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
         const fila = `
           <tr>
             <td data-label="Proveedor">${d.proveedor}</td>
             <td data-label="Cliente">${d.cliente}</td>
             <td data-label="Camiones">${d.camiones}</td>
+            <td><button class="danger-btn" onclick="borrarExcepcion('${docSnap.id}')">Restar / Eliminar</button></td>
           </tr>`;
         tablaExc.innerHTML += fila;
       });
     }
+
+    window.borrarExcepcion = async (id) => {
+      if (confirm("¿Seguro que deseas restar o eliminar esta excepción?")) {
+        await deleteDoc(doc(db, "excepciones", id));
+        alert("🗑️ Excepción eliminada correctamente");
+        cargarExcepciones();
+      }
+    };
 
     btnExcepcion.addEventListener("click", async () => {
       const proveedor = document.getElementById("exProveedor").value.trim();
@@ -298,13 +329,28 @@
         return;
       }
 
-      await addDoc(collection(db, "excepciones"), {
-        proveedor,
-        cliente,
-        camiones
+      // Buscar si ya existe el mismo proveedor+cliente
+      const snapshot = await getDocs(collection(db, "excepciones"));
+      let existente = null;
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        if (d.proveedor === proveedor && d.cliente === cliente) existente = { id: docSnap.id, ...d };
       });
 
-      alert(`🚨 Excepción registrada para ${proveedor} (${camiones} camiones)`);
+      if (existente) {
+        const nuevoValor = (existente.camiones || 0) + camiones;
+        if (nuevoValor <= 0) {
+          await deleteDoc(doc(db, "excepciones", existente.id));
+          alert(`🗑️ Excepción eliminada (camiones = 0)`);
+        } else {
+          await updateDoc(doc(db, "excepciones", existente.id), { camiones: nuevoValor });
+          alert(`🔄 Excepción actualizada: ${proveedor} (${nuevoValor} camiones)`);
+        }
+      } else {
+        await addDoc(collection(db, "excepciones"), { proveedor, cliente, camiones });
+        alert(`🚨 Excepción añadida para ${proveedor} (${camiones} camiones)`);
+      }
+
       document.getElementById("exProveedor").value = "";
       document.getElementById("exCliente").value = "";
       document.getElementById("exCamiones").value = "";
