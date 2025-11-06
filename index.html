@@ -151,29 +151,33 @@
       </table>
     </div>
 
-    <!-- EXCEPCIONES -->
-    <div id="excepcionesCard" class="card hidden">
-      <h2>🚨 Excepciones</h2>
+  <!-- EXCEPCIONES -->
+<div id="excepcionesCard" class="card">   <!-- ❌ sin class="hidden" -->
+  <h2>🚨 Excepciones</h2>
 
-      <div class="excepcion-form">
-        <input type="text" id="excProveedor" placeholder="Proveedor">
-        <input type="text" id="excCliente" placeholder="Cliente">
-        <input type="number" id="excCantidad" placeholder="Cantidad (+ o -)">
-        <button id="btnExcepcion">Registrar / Actualizar</button>
-      </div>
+  <div class="excepcion-form">
+    <input type="text" id="excProveedor" placeholder="Proveedor">
+    <input type="text" id="excCliente" placeholder="Cliente">
+    <input type="number" id="excCantidad" placeholder="Cantidad (+ o -)">
+    <button id="btnExcepcion">Registrar / Actualizar</button>
+  </div>
 
-      <table id="tabla-excepciones">
-        <thead>
-          <tr>
-            <th>Proveedor</th>
-            <th>Cliente</th>
-            <th>Camiones</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+  <table id="tabla-excepciones">
+    <thead>
+      <tr>
+        <th>Proveedor</th>
+        <th>Cliente</th>
+        <th>Camiones</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr id="sinExcepciones">
+        <td colspan="4" style="text-align:center;color:#888">No hay excepciones registradas</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
   </main>
 
   <footer>Desarrollado por Hugo 🧠 | Firebase + Netlify</footer>
@@ -238,7 +242,11 @@
 
     // Cargar excepciones con filtro
     async function cargarExcepciones(proveedor, cliente, puerto, fecha) {
-      tablaExcepciones.innerHTML = "";
+  tablaExcepciones.innerHTML = '';
+      const sinFila = document.createElement('tr');
+  sinFila.innerHTML = '<td colspan="4" style="text-align:center;color:#888">No hay excepciones registradas</td>';
+  sinFila.id = 'sinExcepciones';
+  tablaExcepciones.appendChild(sinFila);
       const snapshot = await getDocs(collection(db, "excepciones"));
       let encontrado = false;
       snapshot.forEach(docSnap => {
@@ -362,3 +370,4 @@
   </script>
 </body>
 </html>
+
