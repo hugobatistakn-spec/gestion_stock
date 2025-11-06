@@ -13,6 +13,7 @@
       --primary-hover: #0056b3;
       --text: #333;
       --border: #e0e6ef;
+      --danger: #e63946;
     }
 
     body {
@@ -37,8 +38,7 @@
       padding: 0 1rem;
     }
 
-    h1 {
-      font-size: 1.8rem;
+    h1, h2 {
       font-weight: 600;
       margin-bottom: 1rem;
     }
@@ -102,9 +102,7 @@
       table, thead, tbody, th, td, tr {
         display: block;
       }
-      thead tr {
-        display: none;
-      }
+      thead tr { display: none; }
       tbody tr {
         background-color: var(--card);
         margin-bottom: 10px;
@@ -130,6 +128,10 @@
       color: #888;
       font-size: 0.9rem;
     }
+
+    .danger-title {
+      color: var(--danger);
+    }
   </style>
 </head>
 
@@ -139,6 +141,7 @@
   </header>
 
   <main>
+    <!-- 📥 Formulario Stock -->
     <div class="card">
       <h2>➕ Añadir / ➖ Reducir stock</h2>
       <div>
@@ -151,6 +154,7 @@
       </div>
     </div>
 
+    <!-- 📊 Stock actual -->
     <div class="card">
       <h2>📊 Disponibilidad actual</h2>
       <table id="tabla-stock">
@@ -166,13 +170,35 @@
         <tbody></tbody>
       </table>
     </div>
+
+    <!-- 🚨 Excepciones -->
+    <div class="card">
+      <h2 class="danger-title">🚨 Excepciones</h2>
+      <div>
+        <input type="text" id="exProveedor" placeholder="Proveedor" required>
+        <input type="text" id="exCliente" placeholder="Cliente" required>
+        <input type="number" id="exCamiones" placeholder="Cantidad de camiones" required>
+        <button id="btnExcepcion">Registrar excepción</button>
+      </div>
+
+      <table id="tabla-excepciones">
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Cliente</th>
+            <th>Camiones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </main>
 
   <footer>Desarrollado por Hugo 🧠 | Firebase + Netlify</footer>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, setDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC8qPpRUTOP5Ef7pf4DYXkTCZnTWVQwHHU",
@@ -186,6 +212,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // === STOCK ===
     const tablaBody = document.querySelector("#tabla-stock tbody");
     const btnGuardar = document.getElementById("btnGuardar");
 
@@ -241,8 +268,50 @@
     });
 
     cargarDatos();
+
+    // === EXCEPCIONES ===
+    const tablaExc = document.querySelector("#tabla-excepciones tbody");
+    const btnExcepcion = document.getElementById("btnExcepcion");
+
+    async function cargarExcepciones() {
+      tablaExc.innerHTML = "";
+      const snapshot = await getDocs(collection(db, "excepciones"));
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        const fila = `
+          <tr>
+            <td data-label="Proveedor">${d.proveedor}</td>
+            <td data-label="Cliente">${d.cliente}</td>
+            <td data-label="Camiones">${d.camiones}</td>
+          </tr>`;
+        tablaExc.innerHTML += fila;
+      });
+    }
+
+    btnExcepcion.addEventListener("click", async () => {
+      const proveedor = document.getElementById("exProveedor").value.trim();
+      const cliente = document.getElementById("exCliente").value.trim();
+      const camiones = parseInt(document.getElementById("exCamiones").value);
+
+      if (!proveedor || !cliente || isNaN(camiones)) {
+        alert("⚠️ Completa todos los campos para registrar una excepción.");
+        return;
+      }
+
+      await addDoc(collection(db, "excepciones"), {
+        proveedor,
+        cliente,
+        camiones
+      });
+
+      alert(`🚨 Excepción registrada para ${proveedor} (${camiones} camiones)`);
+      document.getElementById("exProveedor").value = "";
+      document.getElementById("exCliente").value = "";
+      document.getElementById("exCamiones").value = "";
+      cargarExcepciones();
+    });
+
+    cargarExcepciones();
   </script>
 </body>
 </html>
-
-
