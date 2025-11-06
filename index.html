@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gestión Intermodal</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -14,7 +14,6 @@
       --text: #333;
       --border: #e0e6ef;
     }
-
     body {
       font-family: 'Inter', sans-serif;
       background-color: var(--bg);
@@ -22,7 +21,6 @@
       padding: 0;
       color: var(--text);
     }
-
     header {
       background-color: var(--primary);
       color: #fff;
@@ -30,19 +28,16 @@
       text-align: center;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-
     main {
       max-width: 950px;
       margin: 2rem auto;
       padding: 0 1rem;
     }
-
     h1 {
       font-size: 1.8rem;
       font-weight: 600;
       margin-bottom: 1rem;
     }
-
     .card {
       background-color: var(--card);
       border-radius: 12px;
@@ -50,7 +45,6 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       margin-bottom: 2rem;
     }
-
     input, button, select {
       padding: 10px 14px;
       border: 1px solid var(--border);
@@ -59,12 +53,10 @@
       outline: none;
       margin: 6px;
     }
-
     input:focus, select:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
     }
-
     button {
       background-color: var(--primary);
       color: #fff;
@@ -72,43 +64,35 @@
       cursor: pointer;
       transition: background 0.2s ease;
     }
-
     button:hover {
       background-color: var(--primary-hover);
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 1rem;
     }
-
     th, td {
       border-bottom: 1px solid var(--border);
       padding: 10px;
       text-align: left;
     }
-
     th {
       background-color: #f0f4fa;
       font-weight: 600;
     }
-
     tr:hover {
       background-color: #f9fbff;
     }
-
     .hidden {
       display: none;
     }
-
     footer {
       text-align: center;
       padding: 1rem;
       color: #888;
       font-size: 0.9rem;
     }
-
     .excepcion-form {
       display: flex;
       flex-wrap: wrap;
@@ -143,9 +127,8 @@
       <h2>🔍 Buscar disponibilidad</h2>
       <div>
         <input type="date" id="filtroFecha" placeholder="Fecha">
-        <input type="text" id="filtroProveedor" placeholder="Proveedor">
-        <input type="text" id="filtroCliente" placeholder="Cliente">
         <input type="text" id="filtroPuerto" placeholder="Puerto">
+        <input type="text" id="filtroCliente" placeholder="Cliente (para excepciones)">
         <button id="btnBuscar">Buscar</button>
       </div>
     </div>
@@ -221,17 +204,15 @@
     const btnExcepcion = document.getElementById("btnExcepcion");
 
     // Cargar disponibilidad con filtro
-    async function cargarDatos(filtros) {
+    async function cargarDatos(puerto, fecha) {
       tablaBody.innerHTML = "";
       const snapshot = await getDocs(collection(db, "proveedores"));
       let encontrado = false;
-
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
+      snapshot.forEach(doc => {
+        const d = doc.data();
         if (
-          (!filtros.fecha || d.fecha === filtros.fecha) &&
-          (!filtros.proveedor || d.proveedor.toLowerCase().includes(filtros.proveedor.toLowerCase())) &&
-          (!filtros.puerto || d.puerto?.toLowerCase().includes(filtros.puerto.toLowerCase()))
+          (!puerto || d.puerto === puerto) &&
+          (!fecha || d.fecha === fecha)
         ) {
           encontrado = true;
           const fila = `
@@ -249,11 +230,40 @@
 
       if (encontrado) {
         disponibilidadCard.classList.remove("hidden");
-        excepcionesCard.classList.remove("hidden");
-        cargarExcepciones(filtros);
       } else {
         alert("⚠️ No se encontraron datos con ese filtro.");
         disponibilidadCard.classList.add("hidden");
+      }
+    }
+
+    // Cargar excepciones con filtro
+    async function cargarExcepciones(proveedor, cliente, puerto, fecha) {
+      tablaExcepciones.innerHTML = "";
+      const snapshot = await getDocs(collection(db, "excepciones"));
+      let encontrado = false;
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        if (
+          (!proveedor || d.proveedor === proveedor) &&
+          (!cliente || d.cliente === cliente) &&
+          (!puerto || d.puerto === puerto) &&
+          (!fecha || d.fecha === fecha)
+        ) {
+          encontrado = true;
+          const fila = `
+            <tr>
+              <td>${d.proveedor}</td>
+              <td>${d.cliente}</td>
+              <td>${d.camiones}</td>
+              <td><button class="btnEliminarExc" data-id="${docSnap.id}">❌ Eliminar</button></td>
+            </tr>`;
+          tablaExcepciones.innerHTML += fila;
+        }
+      });
+
+      if (encontrado) {
+        excepcionesCard.classList.remove("hidden");
+      } else {
         excepcionesCard.classList.add("hidden");
       }
     }
@@ -291,41 +301,17 @@
       });
 
       alert(`✅ Stock actualizado para ${proveedor}: ${nuevoStock} unidades (TN: ${tn}).`);
-      document.querySelectorAll("input").forEach(i => i.value = "");
+      document.querySelectorAll("#proveedor, #cantidad, #tn, #fecha, #puerto, #usuario").forEach(i => i.value = "");
     });
 
     // Buscar datos
     btnBuscar.addEventListener("click", () => {
-      const filtros = {
-        fecha: document.getElementById("filtroFecha").value,
-        proveedor: document.getElementById("filtroProveedor").value.trim(),
-        cliente: document.getElementById("filtroCliente").value.trim(),
-        puerto: document.getElementById("filtroPuerto").value.trim()
-      };
-      cargarDatos(filtros);
+      const puerto = document.getElementById("filtroPuerto").value.trim();
+      const fecha = document.getElementById("filtroFecha").value;
+      const cliente = document.getElementById("filtroCliente").value.trim();
+      cargarDatos(puerto, fecha);
+      cargarExcepciones(document.getElementById("proveedor").value.trim(), cliente, puerto, fecha);
     });
-
-    // Cargar excepciones
-    async function cargarExcepciones(filtros) {
-      tablaExcepciones.innerHTML = "";
-      const snapshot = await getDocs(collection(db, "excepciones"));
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
-        if (
-          (!filtros.proveedor || d.proveedor.toLowerCase().includes(filtros.proveedor.toLowerCase())) &&
-          (!filtros.cliente || d.cliente.toLowerCase().includes(filtros.cliente.toLowerCase()))
-        ) {
-          const fila = `
-            <tr>
-              <td>${d.proveedor}</td>
-              <td>${d.cliente}</td>
-              <td>${d.camiones}</td>
-              <td><button class="btnEliminarExc" data-id="${docSnap.id}">❌ Eliminar</button></td>
-            </tr>`;
-          tablaExcepciones.innerHTML += fila;
-        }
-      });
-    }
 
     // Registrar o actualizar excepción
     btnExcepcion.addEventListener("click", async () => {
@@ -355,7 +341,10 @@
       await setDoc(refExc, { proveedor, cliente, camiones: cantidad });
 
       alert(`🚚 Excepción aplicada correctamente a ${proveedor}.`);
-      cargarExcepciones({});
+      const puerto = document.getElementById("filtroPuerto").value.trim();
+      const fecha = document.getElementById("filtroFecha").value;
+      const clienteFiltro = document.getElementById("filtroCliente").value.trim();
+      cargarExcepciones(proveedor, clienteFiltro, puerto, fecha);
     });
 
     // Eliminar excepción
@@ -364,7 +353,10 @@
         const id = e.target.dataset.id;
         await deleteDoc(doc(db, "excepciones", id));
         alert("🗑️ Excepción eliminada.");
-        cargarExcepciones({});
+        const puerto = document.getElementById("filtroPuerto").value.trim();
+        const fecha = document.getElementById("filtroFecha").value;
+        const cliente = document.getElementById("filtroCliente").value.trim();
+        cargarExcepciones(document.getElementById("proveedor").value.trim(), cliente, puerto, fecha);
       }
     });
   </script>
