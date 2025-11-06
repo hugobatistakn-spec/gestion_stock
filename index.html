@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gestión Intermodal</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -14,7 +14,6 @@
       --text: #333;
       --border: #e0e6ef;
     }
-
     body {
       font-family: 'Inter', sans-serif;
       background-color: var(--bg);
@@ -22,7 +21,6 @@
       padding: 0;
       color: var(--text);
     }
-
     header {
       background-color: var(--primary);
       color: #fff;
@@ -30,13 +28,16 @@
       text-align: center;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-
     main {
       max-width: 950px;
       margin: 2rem auto;
       padding: 0 1rem;
     }
-
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
     .card {
       background-color: var(--card);
       border-radius: 12px;
@@ -44,8 +45,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       margin-bottom: 2rem;
     }
-
-    input, button {
+    input, button, select {
       padding: 10px 14px;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -53,12 +53,10 @@
       outline: none;
       margin: 6px;
     }
-
-    input:focus {
+    input:focus, select:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
     }
-
     button {
       background-color: var(--primary);
       color: #fff;
@@ -66,34 +64,35 @@
       cursor: pointer;
       transition: background 0.2s ease;
     }
-
     button:hover {
       background-color: var(--primary-hover);
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 1rem;
     }
-
     th, td {
       border-bottom: 1px solid var(--border);
       padding: 10px;
       text-align: left;
     }
-
     th {
       background-color: #f0f4fa;
       font-weight: 600;
     }
-
     tr:hover {
       background-color: #f9fbff;
     }
-
-    .hidden { display: none; }
-
+    .hidden {
+      display: none;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      color: #888;
+      font-size: 0.9rem;
+    }
     .excepcion-form {
       display: flex;
       flex-wrap: wrap;
@@ -128,9 +127,8 @@
       <h2>🔍 Buscar disponibilidad</h2>
       <div>
         <input type="date" id="filtroFecha" placeholder="Fecha">
-        <input type="text" id="filtroProveedor" placeholder="Proveedor">
-        <input type="text" id="filtroCliente" placeholder="Cliente">
         <input type="text" id="filtroPuerto" placeholder="Puerto">
+        <input type="text" id="filtroCliente" placeholder="Cliente (para excepciones)">
         <button id="btnBuscar">Buscar</button>
       </div>
     </div>
@@ -153,29 +151,33 @@
       </table>
     </div>
 
-    <!-- EXCEPCIONES -->
-    <div id="excepcionesCard" class="card hidden">
-      <h2>🚨 Excepciones</h2>
+  <!-- EXCEPCIONES -->
+<div id="excepcionesCard" class="card">   <!-- ❌ sin class="hidden" -->
+  <h2>🚨 Excepciones</h2>
 
-      <div class="excepcion-form">
-        <input type="text" id="excProveedor" placeholder="Proveedor">
-        <input type="text" id="excCliente" placeholder="Cliente">
-        <input type="number" id="excCantidad" placeholder="Cantidad (+ o -)">
-        <button id="btnExcepcion">Registrar / Actualizar</button>
-      </div>
+  <div class="excepcion-form">
+    <input type="text" id="excProveedor" placeholder="Proveedor">
+    <input type="text" id="excCliente" placeholder="Cliente">
+    <input type="number" id="excCantidad" placeholder="Cantidad (+ o -)">
+    <button id="btnExcepcion">Registrar / Actualizar</button>
+  </div>
 
-      <table id="tabla-excepciones">
-        <thead>
-          <tr>
-            <th>Proveedor</th>
-            <th>Cliente</th>
-            <th>Camiones</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+  <table id="tabla-excepciones">
+    <thead>
+      <tr>
+        <th>Proveedor</th>
+        <th>Cliente</th>
+        <th>Camiones</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr id="sinExcepciones">
+        <td colspan="4" style="text-align:center;color:#888">No hay excepciones registradas</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
   </main>
 
   <footer>Desarrollado por Hugo 🧠 | Firebase + Netlify</footer>
@@ -205,40 +207,16 @@
     const btnBuscar = document.getElementById("btnBuscar");
     const btnExcepcion = document.getElementById("btnExcepcion");
 
-    // Buscar datos
-    btnBuscar.addEventListener("click", async () => {
-      const filtros = {
-        fecha: document.getElementById("filtroFecha").value,
-        proveedor: document.getElementById("filtroProveedor").value.trim(),
-        cliente: document.getElementById("filtroCliente").value.trim(),
-        puerto: document.getElementById("filtroPuerto").value.trim()
-      };
-
-      if (!filtros.fecha && !filtros.proveedor && !filtros.cliente && !filtros.puerto) {
-        alert("⚠️ Ingresa al menos un filtro para buscar.");
-        return;
-      }
-
-      await cargarDisponibilidad(filtros);
-      await cargarExcepciones(filtros);
-
-      // Mostrar los paneles
-      disponibilidadCard.classList.remove("hidden");
-      excepcionesCard.classList.remove("hidden");
-    });
-
-    // Cargar disponibilidad
-    async function cargarDisponibilidad(filtros) {
+    // Cargar disponibilidad con filtro
+    async function cargarDatos(puerto, fecha) {
       tablaBody.innerHTML = "";
       const snapshot = await getDocs(collection(db, "proveedores"));
       let encontrado = false;
-
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
+      snapshot.forEach(doc => {
+        const d = doc.data();
         if (
-          (!filtros.fecha || d.fecha === filtros.fecha) &&
-          (!filtros.proveedor || d.proveedor?.toLowerCase().includes(filtros.proveedor.toLowerCase())) &&
-          (!filtros.puerto || d.puerto?.toLowerCase().includes(filtros.puerto.toLowerCase()))
+          (!puerto || d.puerto === puerto) &&
+          (!fecha || d.fecha === fecha)
         ) {
           encontrado = true;
           const fila = `
@@ -254,22 +232,30 @@
         }
       });
 
-      if (!encontrado) {
-        tablaBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Sin datos disponibles</td></tr>`;
+      if (encontrado) {
+        disponibilidadCard.classList.remove("hidden");
+      } else {
+        alert("⚠️ No se encontraron datos con ese filtro.");
+        disponibilidadCard.classList.add("hidden");
       }
     }
 
-    // Cargar excepciones
-    async function cargarExcepciones(filtros) {
-      tablaExcepciones.innerHTML = "";
+    // Cargar excepciones con filtro
+    async function cargarExcepciones(proveedor, cliente, puerto, fecha) {
+  tablaExcepciones.innerHTML = '';
+      const sinFila = document.createElement('tr');
+  sinFila.innerHTML = '<td colspan="4" style="text-align:center;color:#888">No hay excepciones registradas</td>';
+  sinFila.id = 'sinExcepciones';
+  tablaExcepciones.appendChild(sinFila);
       const snapshot = await getDocs(collection(db, "excepciones"));
       let encontrado = false;
-
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
         if (
-          (!filtros.proveedor || d.proveedor?.toLowerCase().includes(filtros.proveedor.toLowerCase())) &&
-          (!filtros.cliente || d.cliente?.toLowerCase().includes(filtros.cliente.toLowerCase()))
+          (!proveedor || d.proveedor === proveedor) &&
+          (!cliente || d.cliente === cliente) &&
+          (!puerto || d.puerto === puerto) &&
+          (!fecha || d.fecha === fecha)
         ) {
           encontrado = true;
           const fila = `
@@ -277,14 +263,16 @@
               <td>${d.proveedor}</td>
               <td>${d.cliente}</td>
               <td>${d.camiones}</td>
-              <td><button class="btnEliminarExc" data-id="${docSnap.id}">❌</button></td>
+              <td><button class="btnEliminarExc" data-id="${docSnap.id}">❌ Eliminar</button></td>
             </tr>`;
           tablaExcepciones.innerHTML += fila;
         }
       });
 
-      if (!encontrado) {
-        tablaExcepciones.innerHTML = `<tr><td colspan="4" style="text-align:center;">Sin excepciones registradas</td></tr>`;
+      if (encontrado) {
+        excepcionesCard.classList.remove("hidden");
+      } else {
+        excepcionesCard.classList.add("hidden");
       }
     }
 
@@ -298,37 +286,70 @@
       const usuario = document.getElementById("usuario").value.trim();
 
       if (!proveedor || isNaN(cantidad) || !fecha || !usuario) {
-        alert("⚠️ Completa los campos obligatorios.");
+        alert("⚠️ Por favor, completa todos los campos obligatorios (Proveedor, Cantidad, Fecha, Usuario).");
         return;
       }
 
       const ref = doc(db, "proveedores", proveedor);
       const snap = await getDoc(ref);
+
       let nuevoStock = cantidad;
-
-      if (snap.exists()) nuevoStock = (snap.data().stock || 0) + cantidad;
-
-      await setDoc(ref, { proveedor, stock: nuevoStock, fecha, puerto, usuario, tn });
-      alert(`✅ Stock actualizado (${nuevoStock}) para ${proveedor}.`);
-      document.querySelectorAll("input").forEach(i => (i.value = ""));
-    });
-
-    // Registrar excepción
-    btnExcepcion.addEventListener("click", async () => {
-      const proveedor = document.getElementById("excProveedor").value.trim();
-      const cliente = document.getElementById("excCliente").value.trim();
-      const cantidad = parseInt(document.getElementById("excCantidad").value);
-
-      if (!proveedor || !cliente || isNaN(cantidad)) {
-        alert("⚠️ Completa todos los campos.");
-        return;
+      if (snap.exists()) {
+        const datos = snap.data();
+        nuevoStock = (datos.stock || 0) + cantidad;
       }
 
-      const refExc = doc(db, "excepciones", `${proveedor}-${cliente}`);
-      await setDoc(refExc, { proveedor, cliente, camiones: cantidad });
-      alert("🚚 Excepción registrada correctamente.");
-      cargarExcepciones({});
+      await setDoc(ref, {
+        proveedor,
+        stock: nuevoStock,
+        fecha,
+        puerto,
+        usuario,
+        tn
+      });
+
+      alert(`✅ Stock actualizado para ${proveedor}: ${nuevoStock} unidades (TN: ${tn}).`);
+      document.querySelectorAll("#proveedor, #cantidad, #tn, #fecha, #puerto, #usuario").forEach(i => i.value = "");
     });
+
+    // Buscar datos
+    btnBuscar.addEventListener("click", () => {
+      const puerto = document.getElementById("filtroPuerto").value.trim();
+      const fecha = document.getElementById("filtroFecha").value;
+      const cliente = document.getElementById("filtroCliente").value.trim();
+      cargarDatos(puerto, fecha);
+      cargarExcepciones(document.getElementById("proveedor").value.trim(), cliente, puerto, fecha);
+    });
+
+   // Registrar o actualizar excepción (SIN validar existencia previa del proveedor)
+btnExcepcion.addEventListener("click", async () => {
+  const proveedor = document.getElementById("excProveedor").value.trim();
+  const cliente   = document.getElementById("excCliente").value.trim();
+  const cantidad  = parseInt(document.getElementById("excCantidad").value);
+
+  if (!proveedor || !cliente || isNaN(cantidad)) {
+    alert("⚠️ Completa todos los campos de la excepción.");
+    return;
+  }
+
+  // Actualiza (o crea) el stock del proveedor directamente
+  const refProv = doc(db, "proveedores", proveedor);
+  const snap    = await getDoc(refProv);
+  const datos   = snap.exists() ? snap.data() : {};
+  const nuevoStock = (datos.stock || 0) + cantidad;
+
+  await setDoc(refProv, { ...datos, proveedor, stock: nuevoStock });
+
+  // Guarda / sobrescribe la excepción
+  const refExc = doc(db, "excepciones", `${proveedor}-${cliente}`);
+  await setDoc(refExc, { proveedor, cliente, camiones: cantidad });
+
+  alert(`🚚 Excepción aplicada correctamente a ${proveedor}.`);
+  const puerto  = document.getElementById("filtroPuerto").value.trim();
+  const fecha   = document.getElementById("filtroFecha").value;
+  const clienteFiltro = document.getElementById("filtroCliente").value.trim();
+  cargarExcepciones(proveedor, clienteFiltro, puerto, fecha);
+});
 
     // Eliminar excepción
     document.addEventListener("click", async e => {
@@ -336,9 +357,13 @@
         const id = e.target.dataset.id;
         await deleteDoc(doc(db, "excepciones", id));
         alert("🗑️ Excepción eliminada.");
-        cargarExcepciones({});
+        const puerto = document.getElementById("filtroPuerto").value.trim();
+        const fecha = document.getElementById("filtroFecha").value;
+        const cliente = document.getElementById("filtroCliente").value.trim();
+        cargarExcepciones(document.getElementById("proveedor").value.trim(), cliente, puerto, fecha);
       }
     });
   </script>
 </body>
 </html>
+
