@@ -33,11 +33,6 @@
       margin: 2rem auto;
       padding: 0 1rem;
     }
-    h1 {
-      font-size: 1.8rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-    }
     .card {
       background-color: var(--card);
       border-radius: 12px;
@@ -45,7 +40,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       margin-bottom: 2rem;
     }
-    input, button, select {
+    input, button {
       padding: 10px 14px;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -53,7 +48,7 @@
       outline: none;
       margin: 6px;
     }
-    input:focus, select:focus {
+    input:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
     }
@@ -81,21 +76,13 @@
       background-color: #f0f4fa;
       font-weight: 600;
     }
-    tr:hover {
-      background-color: #f9fbff;
-    }
+    tr:hover { background-color: #f9fbff; }
     .hidden { display: none; }
     footer {
       text-align: center;
       padding: 1rem;
       color: #888;
       font-size: 0.9rem;
-    }
-    .excepcion-form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 1rem;
     }
   </style>
 </head>
@@ -111,12 +98,14 @@
       <h2>➕ Añadir / ➖ Reducir stock</h2>
       <div>
         <input type="text" id="proveedor" placeholder="Proveedor" required>
+        <input type="text" id="acuerdoStock" placeholder="Acuerdo de Stock (opcional)">
         <input type="number" id="cantidad" placeholder="Cantidad (+ o -)">
         <input type="text" id="tn" placeholder="Tracking Number (TN)">
         <input type="date" id="fecha" required>
         <input type="text" id="puerto" placeholder="Puerto">
         <input type="text" id="usuario" placeholder="Usuario" required>
         <button id="btnGuardar">Guardar cambios</button>
+        <button id="btnLimpiar" style="background-color:#6c757d;">🧹 Limpiar campos</button>
       </div>
     </div>
 
@@ -138,7 +127,8 @@
         <thead>
           <tr>
             <th>Proveedor</th>
-            <th>Stock</th>
+            <th>Acuerdo de Stock</th>
+            <th>Disponibilidad</th>
             <th>Puerto</th>
             <th>Fecha</th>
             <th>Usuario</th>
@@ -159,7 +149,6 @@
         <button id="btnExcepcion">Registrar / Actualizar</button>
       </div>
 
-      <!-- 🔍 Búsqueda dentro de excepciones -->
       <input type="text" id="buscarExcepcion" placeholder="Buscar proveedor o cliente..." style="width:100%;margin-top:10px;">
 
       <table id="tabla-excepciones">
@@ -196,21 +185,22 @@
 
     const tablaBody = document.querySelector("#tabla-stock tbody");
     const tablaExcepciones = document.querySelector("#tbodyExcepciones");
-    const disponibilidadCard = document.getElementById("disponibilidadCard");
 
     const btnGuardar = document.getElementById("btnGuardar");
     const btnBuscar = document.getElementById("btnBuscar");
     const btnExcepcion = document.getElementById("btnExcepcion");
+    const btnLimpiar = document.getElementById("btnLimpiar");
     const buscarExcepcion = document.getElementById("buscarExcepcion");
 
-    // Guardar inputs en localStorage
+    // Guardar en localStorage
     function saveInputs() {
-      const inputs = document.querySelectorAll("input");
-      inputs.forEach(i => localStorage.setItem(i.id, i.value));
+      document.querySelectorAll("input").forEach(i => localStorage.setItem(i.id, i.value));
     }
     function loadInputs() {
-      const inputs = document.querySelectorAll("input");
-      inputs.forEach(i => { if (localStorage.getItem(i.id)) i.value = localStorage.getItem(i.id); });
+      document.querySelectorAll("input").forEach(i => {
+        const val = localStorage.getItem(i.id);
+        if (val !== null) i.value = val;
+      });
     }
     document.addEventListener("input", e => { if (e.target.tagName === "INPUT") saveInputs(); });
     loadInputs();
@@ -227,7 +217,8 @@
           const fila = `
             <tr>
               <td>${d.proveedor}</td>
-              <td>${d.stock ?? 0}</td>
+              <td>${d.acuerdoStock ?? ""}</td>
+              <td>${d.disponibilidad ?? 0}</td>
               <td>${d.puerto ?? ""}</td>
               <td>${d.fecha ?? ""}</td>
               <td>${d.usuario ?? ""}</td>
@@ -236,7 +227,7 @@
           tablaBody.innerHTML += fila;
         }
       });
-      disponibilidadCard.classList.toggle("hidden", !encontrado);
+      document.getElementById("disponibilidadCard").classList.toggle("hidden", !encontrado);
     }
 
     // Cargar excepciones
@@ -254,13 +245,12 @@
           </tr>`;
         tablaExcepciones.innerHTML += fila;
       });
-      if (tablaExcepciones.innerHTML === "") {
+      if (tablaExcepciones.innerHTML === "")
         tablaExcepciones.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888">No hay excepciones registradas</td></tr>';
-      }
     }
     cargarExcepciones();
 
-    // Filtrar excepciones
+    // Filtro excepciones local
     buscarExcepcion.addEventListener("input", e => {
       const texto = e.target.value.toLowerCase();
       document.querySelectorAll("#tabla-excepciones tbody tr").forEach(row => {
@@ -268,9 +258,10 @@
       });
     });
 
-    // Guardar stock
+    // Guardar o actualizar stock
     btnGuardar.addEventListener("click", async () => {
       const proveedor = document.getElementById("proveedor").value.trim();
+      const acuerdoStock = document.getElementById("acuerdoStock").value.trim();
       const cantidad = parseInt(document.getElementById("cantidad").value);
       const tn = document.getElementById("tn").value.trim();
       const fecha = document.getElementById("fecha").value;
@@ -280,13 +271,37 @@
         alert("⚠️ Completa todos los campos obligatorios.");
         return;
       }
+
       const ref = doc(db, "proveedores", proveedor);
       const snap = await getDoc(ref);
-      let nuevoStock = cantidad;
-      if (snap.exists()) nuevoStock = (snap.data().stock || 0) + cantidad;
-      await setDoc(ref, { proveedor, stock: nuevoStock, fecha, puerto, usuario, tn });
-      alert(`✅ Stock actualizado para ${proveedor}`);
+      let nuevaDisp = cantidad;
+      if (snap.exists()) {
+        const datos = snap.data();
+        nuevaDisp = (datos.disponibilidad || 0) + cantidad;
+      }
+
+      await setDoc(ref, {
+        proveedor,
+        acuerdoStock,
+        disponibilidad: nuevaDisp,
+        fecha,
+        puerto,
+        usuario,
+        tn
+      });
+
+      alert(`✅ Actualizado ${proveedor}: nueva disponibilidad ${nuevaDisp}.`);
       saveInputs();
+      cargarDatos(puerto, fecha);
+    });
+
+    // Botón limpiar
+    btnLimpiar.addEventListener("click", () => {
+      document.querySelectorAll("#proveedor, #acuerdoStock, #cantidad, #tn, #fecha, #puerto, #usuario").forEach(i => {
+        i.value = "";
+        localStorage.removeItem(i.id);
+      });
+      alert("🧹 Campos limpiados.");
     });
 
     // Buscar
@@ -294,7 +309,7 @@
       const puerto = document.getElementById("filtroPuerto").value.trim();
       const fecha = document.getElementById("filtroFecha").value;
       cargarDatos(puerto, fecha);
-      cargarExcepciones(); // se mantiene visible siempre
+      cargarExcepciones();
     });
 
     // Registrar excepción
@@ -303,7 +318,7 @@
       const cliente = document.getElementById("excCliente").value.trim();
       const cantidad = parseInt(document.getElementById("excCantidad").value);
       if (!proveedor || !cliente || isNaN(cantidad)) {
-        alert("⚠️ Completa todos los campos de excepción.");
+        alert("⚠️ Completa todos los campos de la excepción.");
         return;
       }
       const refExc = doc(db, "excepciones", `${proveedor}-${cliente}`);
