@@ -335,9 +335,7 @@
       const refProv = doc(db, "proveedores", proveedor);
       const snap = await getDoc(refProv);
 
-      if (!snap.exists()) {
-        alert("❌ Ese proveedor no existe en stock.");
-        return;
+     
       }
 
       const datos = snap.data();
@@ -370,4 +368,5 @@
   </script>
 </body>
 </html>
+
 
