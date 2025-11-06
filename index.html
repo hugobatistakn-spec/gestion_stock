@@ -13,8 +13,6 @@
       --primary-hover: #0056b3;
       --text: #333;
       --border: #e0e6ef;
-      --danger: #e63946;
-      --success: #06b66b;
     }
 
     body {
@@ -39,7 +37,8 @@
       padding: 0 1rem;
     }
 
-    h1, h2 {
+    h1 {
+      font-size: 1.8rem;
       font-weight: 600;
       margin-bottom: 1rem;
     }
@@ -78,22 +77,6 @@
       background-color: var(--primary-hover);
     }
 
-    .danger-btn {
-      background-color: var(--danger);
-    }
-
-    .danger-btn:hover {
-      background-color: #b1222e;
-    }
-
-    .success-btn {
-      background-color: var(--success);
-    }
-
-    .success-btn:hover {
-      background-color: #049b59;
-    }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -115,23 +98,15 @@
       background-color: #f9fbff;
     }
 
+    .hidden {
+      display: none;
+    }
+
     footer {
       text-align: center;
       padding: 1rem;
       color: #888;
       font-size: 0.9rem;
-    }
-
-    .danger-title {
-      color: var(--danger);
-    }
-
-    .search-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 1rem;
     }
   </style>
 </head>
@@ -142,29 +117,33 @@
   </header>
 
   <main>
-    <!-- 📥 Formulario Stock -->
+    <!-- FORMULARIO PRINCIPAL -->
     <div class="card">
       <h2>➕ Añadir / ➖ Reducir stock</h2>
       <div>
         <input type="text" id="proveedor" placeholder="Proveedor" required>
         <input type="number" id="cantidad" placeholder="Cantidad (+ o -)">
+        <input type="text" id="tn" placeholder="Tracking Number (TN)">
         <input type="date" id="fecha" required>
         <input type="text" id="puerto" placeholder="Puerto">
-        <input type="text" id="usuario" placeholder="Usuario">
+        <input type="text" id="usuario" placeholder="Usuario" required>
         <button id="btnGuardar">Guardar cambios</button>
       </div>
     </div>
 
-    <!-- 📊 Stock actual con búsqueda -->
+    <!-- FILTRO DE BÚSQUEDA -->
     <div class="card">
-      <h2>📊 Disponibilidad actual</h2>
-      <div class="search-bar">
-        <input type="text" id="buscarPuerto" placeholder="Buscar por puerto">
-        <input type="date" id="buscarFecha">
-        <button id="btnBuscar" class="success-btn">🔍 Buscar</button>
-        <button id="btnMostrarTodo">📋 Mostrar todo</button>
+      <h2>🔍 Buscar disponibilidad</h2>
+      <div>
+        <input type="date" id="filtroFecha" placeholder="Fecha">
+        <input type="text" id="filtroPuerto" placeholder="Puerto">
+        <button id="btnBuscar">Buscar</button>
       </div>
+    </div>
 
+    <!-- DISPONIBILIDAD -->
+    <div id="disponibilidadCard" class="card hidden">
+      <h2>📊 Disponibilidad actual</h2>
       <table id="tabla-stock">
         <thead>
           <tr>
@@ -172,33 +151,34 @@
             <th>Stock</th>
             <th>Puerto</th>
             <th>Fecha</th>
-            <th>Último usuario</th>
+            <th>Usuario</th>
+            <th>TN</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
 
-    <!-- 🚨 Excepciones -->
-    <div class="card">
-      <h2 class="danger-title">🚨 Excepciones</h2>
-      <div>
-        <input type="text" id="exProveedor" placeholder="Proveedor" required>
-        <input type="text" id="exCliente" placeholder="Cliente" required>
-        <input type="number" id="exCamiones" placeholder="Cantidad (+ o -)" required>
-        <button id="btnExcepcion" class="success-btn">Registrar / Actualizar</button>
-      </div>
-
+    <!-- EXCEPCIONES -->
+    <div id="excepcionesCard" class="card hidden">
+      <h2>⚠️ Excepciones</h2>
       <table id="tabla-excepciones">
         <thead>
           <tr>
             <th>Proveedor</th>
             <th>Cliente</th>
             <th>Camiones</th>
-            <th>Acciones</th>
+            <th>Acción</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody>
+          <tr>
+            <td><input type="text" placeholder="Proveedor"></td>
+            <td><input type="text" placeholder="Cliente"></td>
+            <td><input type="number" placeholder="Nº camiones"></td>
+            <td><button class="btnRestarExcepcion">➖ Aplicar excepción</button></td>
+          </tr>
+        </tbody>
       </table>
     </div>
   </main>
@@ -207,7 +187,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC8qPpRUTOP5Ef7pf4DYXkTCZnTWVQwHHU",
@@ -221,49 +201,59 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // === STOCK ===
     const tablaBody = document.querySelector("#tabla-stock tbody");
+    const disponibilidadCard = document.getElementById("disponibilidadCard");
+    const excepcionesCard = document.getElementById("excepcionesCard");
+
     const btnGuardar = document.getElementById("btnGuardar");
     const btnBuscar = document.getElementById("btnBuscar");
-    const btnMostrarTodo = document.getElementById("btnMostrarTodo");
 
-    async function cargarDatos(puertoFiltro = "", fechaFiltro = "") {
+    // Cargar datos filtrados
+    async function cargarDatos(puerto, fecha) {
       tablaBody.innerHTML = "";
-      const ref = collection(db, "proveedores");
-      let snapshot;
-
-      if (puertoFiltro || fechaFiltro) {
-        let q = query(ref);
-        if (puertoFiltro) q = query(ref, where("puerto", "==", puertoFiltro));
-        snapshot = await getDocs(q);
-      } else {
-        snapshot = await getDocs(ref);
-      }
-
+      const snapshot = await getDocs(collection(db, "proveedores"));
+      let encontrado = false;
       snapshot.forEach(doc => {
         const d = doc.data();
-        if (fechaFiltro && d.fecha !== fechaFiltro) return; // filtro adicional por fecha
-        const fila = `
-          <tr>
-            <td data-label="Proveedor">${d.proveedor}</td>
-            <td data-label="Stock">${d.stock ?? 0}</td>
-            <td data-label="Puerto">${d.puerto ?? ""}</td>
-            <td data-label="Fecha">${d.fecha ?? ""}</td>
-            <td data-label="Usuario">${d.usuario ?? ""}</td>
-          </tr>`;
-        tablaBody.innerHTML += fila;
+        if (
+          (!puerto || d.puerto === puerto) &&
+          (!fecha || d.fecha === fecha)
+        ) {
+          encontrado = true;
+          const fila = `
+            <tr>
+              <td>${d.proveedor}</td>
+              <td>${d.stock ?? 0}</td>
+              <td>${d.puerto ?? ""}</td>
+              <td>${d.fecha ?? ""}</td>
+              <td>${d.usuario ?? ""}</td>
+              <td>${d.tn ?? ""}</td>
+            </tr>`;
+          tablaBody.innerHTML += fila;
+        }
       });
+
+      if (encontrado) {
+        disponibilidadCard.classList.remove("hidden");
+        excepcionesCard.classList.remove("hidden");
+      } else {
+        alert("⚠️ No se encontraron datos con ese filtro.");
+        disponibilidadCard.classList.add("hidden");
+        excepcionesCard.classList.add("hidden");
+      }
     }
 
+    // Guardar cambios de stock
     btnGuardar.addEventListener("click", async () => {
       const proveedor = document.getElementById("proveedor").value.trim();
       const cantidad = parseInt(document.getElementById("cantidad").value);
+      const tn = document.getElementById("tn").value.trim();
       const fecha = document.getElementById("fecha").value;
       const puerto = document.getElementById("puerto").value.trim();
       const usuario = document.getElementById("usuario").value.trim();
 
-      if (!proveedor || isNaN(cantidad) || !fecha) {
-        alert("⚠️ Por favor, completa todos los campos obligatorios.");
+      if (!proveedor || isNaN(cantidad) || !fecha || !usuario) {
+        alert("⚠️ Por favor, completa todos los campos obligatorios (Proveedor, Cantidad, Fecha, Usuario).");
         return;
       }
 
@@ -276,88 +266,56 @@
         nuevoStock = (datos.stock || 0) + cantidad;
       }
 
-      await setDoc(ref, { proveedor, stock: nuevoStock, fecha, puerto, usuario });
-      alert(`✅ Stock actualizado para ${proveedor}: ${nuevoStock}`);
+      await setDoc(ref, {
+        proveedor,
+        stock: nuevoStock,
+        fecha,
+        puerto,
+        usuario,
+        tn
+      });
+
+      alert(`✅ Stock actualizado para ${proveedor}: ${nuevoStock} unidades (TN: ${tn}).`);
       document.querySelectorAll("input").forEach(i => i.value = "");
-      cargarDatos();
     });
 
-    btnBuscar.addEventListener("click", async () => {
-      const puerto = document.getElementById("buscarPuerto").value.trim();
-      const fecha = document.getElementById("buscarFecha").value;
+    // Buscar por filtros
+    btnBuscar.addEventListener("click", () => {
+      const puerto = document.getElementById("filtroPuerto").value.trim();
+      const fecha = document.getElementById("filtroFecha").value;
       cargarDatos(puerto, fecha);
     });
 
-    btnMostrarTodo.addEventListener("click", () => cargarDatos());
-    cargarDatos();
+    // Restar stock desde excepciones
+    document.addEventListener("click", async e => {
+      if (e.target.classList.contains("btnRestarExcepcion")) {
+        const fila = e.target.closest("tr");
+        const proveedor = fila.querySelector("input[placeholder='Proveedor']").value.trim();
+        const cliente = fila.querySelector("input[placeholder='Cliente']").value.trim();
+        const camiones = parseInt(fila.querySelector("input[placeholder='Nº camiones']").value);
 
-    // === EXCEPCIONES ===
-    const tablaExc = document.querySelector("#tabla-excepciones tbody");
-    const btnExcepcion = document.getElementById("btnExcepcion");
-
-    async function cargarExcepciones() {
-      tablaExc.innerHTML = "";
-      const snapshot = await getDocs(collection(db, "excepciones"));
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
-        const fila = `
-          <tr>
-            <td data-label="Proveedor">${d.proveedor}</td>
-            <td data-label="Cliente">${d.cliente}</td>
-            <td data-label="Camiones">${d.camiones}</td>
-            <td><button class="danger-btn" onclick="borrarExcepcion('${docSnap.id}')">Restar / Eliminar</button></td>
-          </tr>`;
-        tablaExc.innerHTML += fila;
-      });
-    }
-
-    window.borrarExcepcion = async (id) => {
-      if (confirm("¿Seguro que deseas restar o eliminar esta excepción?")) {
-        await deleteDoc(doc(db, "excepciones", id));
-        alert("🗑️ Excepción eliminada correctamente");
-        cargarExcepciones();
-      }
-    };
-
-    btnExcepcion.addEventListener("click", async () => {
-      const proveedor = document.getElementById("exProveedor").value.trim();
-      const cliente = document.getElementById("exCliente").value.trim();
-      const camiones = parseInt(document.getElementById("exCamiones").value);
-
-      if (!proveedor || !cliente || isNaN(camiones)) {
-        alert("⚠️ Completa todos los campos para registrar una excepción.");
-        return;
-      }
-
-      // Buscar si ya existe el mismo proveedor+cliente
-      const snapshot = await getDocs(collection(db, "excepciones"));
-      let existente = null;
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
-        if (d.proveedor === proveedor && d.cliente === cliente) existente = { id: docSnap.id, ...d };
-      });
-
-      if (existente) {
-        const nuevoValor = (existente.camiones || 0) + camiones;
-        if (nuevoValor <= 0) {
-          await deleteDoc(doc(db, "excepciones", existente.id));
-          alert(`🗑️ Excepción eliminada (camiones = 0)`);
-        } else {
-          await updateDoc(doc(db, "excepciones", existente.id), { camiones: nuevoValor });
-          alert(`🔄 Excepción actualizada: ${proveedor} (${nuevoValor} camiones)`);
+        if (!proveedor || isNaN(camiones)) {
+          alert("⚠️ Rellena el proveedor y la cantidad de camiones.");
+          return;
         }
-      } else {
-        await addDoc(collection(db, "excepciones"), { proveedor, cliente, camiones });
-        alert(`🚨 Excepción añadida para ${proveedor} (${camiones} camiones)`);
+
+        const ref = doc(db, "proveedores", proveedor);
+        const snap = await getDoc(ref);
+
+        if (!snap.exists()) {
+          alert("❌ Ese proveedor no existe en el stock.");
+          return;
+        }
+
+        const datos = snap.data();
+        const nuevoStock = (datos.stock || 0) - camiones;
+
+        await setDoc(ref, { ...datos, stock: nuevoStock });
+
+        alert(`🚚 Excepción aplicada a ${proveedor} (${camiones} camiones menos).`);
+        cargarDatos(document.getElementById("filtroPuerto").value.trim(), document.getElementById("filtroFecha").value);
       }
-
-      document.getElementById("exProveedor").value = "";
-      document.getElementById("exCliente").value = "";
-      document.getElementById("exCamiones").value = "";
-      cargarExcepciones();
     });
-
-    cargarExcepciones();
   </script>
 </body>
 </html>
