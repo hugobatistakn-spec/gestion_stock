@@ -143,6 +143,8 @@
       <h2>🔍 Buscar disponibilidad</h2>
       <div>
         <input type="date" id="filtroFecha" placeholder="Fecha">
+        <input type="text" id="filtroProveedor" placeholder="Proveedor">
+        <input type="text" id="filtroCliente" placeholder="Cliente">
         <input type="text" id="filtroPuerto" placeholder="Puerto">
         <button id="btnBuscar">Buscar</button>
       </div>
@@ -195,7 +197,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC8qPpRUTOP5Ef7pf4DYXkTCZnTWVQwHHU",
@@ -219,15 +221,17 @@
     const btnExcepcion = document.getElementById("btnExcepcion");
 
     // Cargar disponibilidad con filtro
-    async function cargarDatos(puerto, fecha) {
+    async function cargarDatos(filtros) {
       tablaBody.innerHTML = "";
       const snapshot = await getDocs(collection(db, "proveedores"));
       let encontrado = false;
-      snapshot.forEach(doc => {
-        const d = doc.data();
+
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
         if (
-          (!puerto || d.puerto === puerto) &&
-          (!fecha || d.fecha === fecha)
+          (!filtros.fecha || d.fecha === filtros.fecha) &&
+          (!filtros.proveedor || d.proveedor.toLowerCase().includes(filtros.proveedor.toLowerCase())) &&
+          (!filtros.puerto || d.puerto?.toLowerCase().includes(filtros.puerto.toLowerCase()))
         ) {
           encontrado = true;
           const fila = `
@@ -246,7 +250,7 @@
       if (encontrado) {
         disponibilidadCard.classList.remove("hidden");
         excepcionesCard.classList.remove("hidden");
-        cargarExcepciones();
+        cargarExcepciones(filtros);
       } else {
         alert("⚠️ No se encontraron datos con ese filtro.");
         disponibilidadCard.classList.add("hidden");
@@ -292,25 +296,34 @@
 
     // Buscar datos
     btnBuscar.addEventListener("click", () => {
-      const puerto = document.getElementById("filtroPuerto").value.trim();
-      const fecha = document.getElementById("filtroFecha").value;
-      cargarDatos(puerto, fecha);
+      const filtros = {
+        fecha: document.getElementById("filtroFecha").value,
+        proveedor: document.getElementById("filtroProveedor").value.trim(),
+        cliente: document.getElementById("filtroCliente").value.trim(),
+        puerto: document.getElementById("filtroPuerto").value.trim()
+      };
+      cargarDatos(filtros);
     });
 
     // Cargar excepciones
-    async function cargarExcepciones() {
+    async function cargarExcepciones(filtros) {
       tablaExcepciones.innerHTML = "";
       const snapshot = await getDocs(collection(db, "excepciones"));
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        const fila = `
-          <tr>
-            <td>${d.proveedor}</td>
-            <td>${d.cliente}</td>
-            <td>${d.camiones}</td>
-            <td><button class="btnEliminarExc" data-id="${doc.id}">❌ Eliminar</button></td>
-          </tr>`;
-        tablaExcepciones.innerHTML += fila;
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        if (
+          (!filtros.proveedor || d.proveedor.toLowerCase().includes(filtros.proveedor.toLowerCase())) &&
+          (!filtros.cliente || d.cliente.toLowerCase().includes(filtros.cliente.toLowerCase()))
+        ) {
+          const fila = `
+            <tr>
+              <td>${d.proveedor}</td>
+              <td>${d.cliente}</td>
+              <td>${d.camiones}</td>
+              <td><button class="btnEliminarExc" data-id="${docSnap.id}">❌ Eliminar</button></td>
+            </tr>`;
+          tablaExcepciones.innerHTML += fila;
+        }
       });
     }
 
@@ -342,16 +355,16 @@
       await setDoc(refExc, { proveedor, cliente, camiones: cantidad });
 
       alert(`🚚 Excepción aplicada correctamente a ${proveedor}.`);
-      cargarExcepciones();
+      cargarExcepciones({});
     });
 
     // Eliminar excepción
     document.addEventListener("click", async e => {
       if (e.target.classList.contains("btnEliminarExc")) {
         const id = e.target.dataset.id;
-        await setDoc(doc(db, "excepciones", id), {}, { merge: false });
+        await deleteDoc(doc(db, "excepciones", id));
         alert("🗑️ Excepción eliminada.");
-        cargarExcepciones();
+        cargarExcepciones({});
       }
     });
   </script>
