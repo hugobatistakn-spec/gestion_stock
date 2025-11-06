@@ -321,37 +321,35 @@
       cargarExcepciones(document.getElementById("proveedor").value.trim(), cliente, puerto, fecha);
     });
 
-    // Registrar o actualizar excepción
-    btnExcepcion.addEventListener("click", async () => {
-      const proveedor = document.getElementById("excProveedor").value.trim();
-      const cliente = document.getElementById("excCliente").value.trim();
-      const cantidad = parseInt(document.getElementById("excCantidad").value);
+   // Registrar o actualizar excepción (SIN validar existencia previa del proveedor)
+btnExcepcion.addEventListener("click", async () => {
+  const proveedor = document.getElementById("excProveedor").value.trim();
+  const cliente   = document.getElementById("excCliente").value.trim();
+  const cantidad  = parseInt(document.getElementById("excCantidad").value);
 
-      if (!proveedor || !cliente || isNaN(cantidad)) {
-        alert("⚠️ Completa todos los campos de la excepción.");
-        return;
-      }
+  if (!proveedor || !cliente || isNaN(cantidad)) {
+    alert("⚠️ Completa todos los campos de la excepción.");
+    return;
+  }
 
-      const refProv = doc(db, "proveedores", proveedor);
-      const snap = await getDoc(refProv);
+  // Actualiza (o crea) el stock del proveedor directamente
+  const refProv = doc(db, "proveedores", proveedor);
+  const snap    = await getDoc(refProv);
+  const datos   = snap.exists() ? snap.data() : {};
+  const nuevoStock = (datos.stock || 0) + cantidad;
 
-     
-      }
+  await setDoc(refProv, { ...datos, proveedor, stock: nuevoStock });
 
-      const datos = snap.data();
-      const nuevoStock = (datos.stock || 0) + cantidad;
+  // Guarda / sobrescribe la excepción
+  const refExc = doc(db, "excepciones", `${proveedor}-${cliente}`);
+  await setDoc(refExc, { proveedor, cliente, camiones: cantidad });
 
-      await setDoc(refProv, { ...datos, stock: nuevoStock });
-
-      const refExc = doc(db, "excepciones", `${proveedor}-${cliente}`);
-      await setDoc(refExc, { proveedor, cliente, camiones: cantidad });
-
-      alert(`🚚 Excepción aplicada correctamente a ${proveedor}.`);
-      const puerto = document.getElementById("filtroPuerto").value.trim();
-      const fecha = document.getElementById("filtroFecha").value;
-      const clienteFiltro = document.getElementById("filtroCliente").value.trim();
-      cargarExcepciones(proveedor, clienteFiltro, puerto, fecha);
-    });
+  alert(`🚚 Excepción aplicada correctamente a ${proveedor}.`);
+  const puerto  = document.getElementById("filtroPuerto").value.trim();
+  const fecha   = document.getElementById("filtroFecha").value;
+  const clienteFiltro = document.getElementById("filtroCliente").value.trim();
+  cargarExcepciones(proveedor, clienteFiltro, puerto, fecha);
+});
 
     // Eliminar excepción
     document.addEventListener("click", async e => {
@@ -368,5 +366,6 @@
   </script>
 </body>
 </html>
+
 
 
