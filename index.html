@@ -84,9 +84,7 @@
     tr:hover {
       background-color: #f9fbff;
     }
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
     footer {
       text-align: center;
       padding: 1rem;
@@ -151,33 +149,31 @@
       </table>
     </div>
 
-  <!-- EXCEPCIONES -->
-<div id="excepcionesCard" class="card">   <!-- ❌ sin class="hidden" -->
-  <h2>🚨 Excepciones</h2>
+    <!-- EXCEPCIONES -->
+    <div id="excepcionesCard" class="card">
+      <h2>🚨 Excepciones</h2>
+      <div class="excepcion-form">
+        <input type="text" id="excProveedor" placeholder="Proveedor">
+        <input type="text" id="excCliente" placeholder="Cliente">
+        <input type="number" id="excCantidad" placeholder="Cantidad (+ o -)">
+        <button id="btnExcepcion">Registrar / Actualizar</button>
+      </div>
 
-  <div class="excepcion-form">
-    <input type="text" id="excProveedor" placeholder="Proveedor">
-    <input type="text" id="excCliente" placeholder="Cliente">
-    <input type="number" id="excCantidad" placeholder="Cantidad (+ o -)">
-    <button id="btnExcepcion">Registrar / Actualizar</button>
-  </div>
+      <!-- 🔍 Búsqueda dentro de excepciones -->
+      <input type="text" id="buscarExcepcion" placeholder="Buscar proveedor o cliente..." style="width:100%;margin-top:10px;">
 
-  <table id="tabla-excepciones">
-    <thead>
-      <tr>
-        <th>Proveedor</th>
-        <th>Cliente</th>
-        <th>Camiones</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr id="sinExcepciones">
-        <td colspan="4" style="text-align:center;color:#888">No hay excepciones registradas</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+      <table id="tabla-excepciones">
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Cliente</th>
+            <th>Camiones</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyExcepciones"></tbody>
+      </table>
+    </div>
   </main>
 
   <footer>Desarrollado por Hugo 🧠 | Firebase + Netlify</footer>
@@ -199,25 +195,34 @@
     const db = getFirestore(app);
 
     const tablaBody = document.querySelector("#tabla-stock tbody");
-    const tablaExcepciones = document.querySelector("#tabla-excepciones tbody");
+    const tablaExcepciones = document.querySelector("#tbodyExcepciones");
     const disponibilidadCard = document.getElementById("disponibilidadCard");
-    const excepcionesCard = document.getElementById("excepcionesCard");
 
     const btnGuardar = document.getElementById("btnGuardar");
     const btnBuscar = document.getElementById("btnBuscar");
     const btnExcepcion = document.getElementById("btnExcepcion");
+    const buscarExcepcion = document.getElementById("buscarExcepcion");
 
-    // Cargar disponibilidad con filtro
+    // Guardar inputs en localStorage
+    function saveInputs() {
+      const inputs = document.querySelectorAll("input");
+      inputs.forEach(i => localStorage.setItem(i.id, i.value));
+    }
+    function loadInputs() {
+      const inputs = document.querySelectorAll("input");
+      inputs.forEach(i => { if (localStorage.getItem(i.id)) i.value = localStorage.getItem(i.id); });
+    }
+    document.addEventListener("input", e => { if (e.target.tagName === "INPUT") saveInputs(); });
+    loadInputs();
+
+    // Cargar disponibilidad
     async function cargarDatos(puerto, fecha) {
       tablaBody.innerHTML = "";
       const snapshot = await getDocs(collection(db, "proveedores"));
       let encontrado = false;
       snapshot.forEach(doc => {
         const d = doc.data();
-        if (
-          (!puerto || d.puerto === puerto) &&
-          (!fecha || d.fecha === fecha)
-        ) {
+        if ((!puerto || d.puerto === puerto) && (!fecha || d.fecha === fecha)) {
           encontrado = true;
           const fila = `
             <tr>
@@ -231,52 +236,39 @@
           tablaBody.innerHTML += fila;
         }
       });
-
-      if (encontrado) {
-        disponibilidadCard.classList.remove("hidden");
-      } else {
-        alert("⚠️ No se encontraron datos con ese filtro.");
-        disponibilidadCard.classList.add("hidden");
-      }
+      disponibilidadCard.classList.toggle("hidden", !encontrado);
     }
 
-    // Cargar excepciones con filtro
-    async function cargarExcepciones(proveedor, cliente, puerto, fecha) {
-  tablaExcepciones.innerHTML = '';
-      const sinFila = document.createElement('tr');
-  sinFila.innerHTML = '<td colspan="4" style="text-align:center;color:#888">No hay excepciones registradas</td>';
-  sinFila.id = 'sinExcepciones';
-  tablaExcepciones.appendChild(sinFila);
+    // Cargar excepciones
+    async function cargarExcepciones() {
+      tablaExcepciones.innerHTML = "";
       const snapshot = await getDocs(collection(db, "excepciones"));
-      let encontrado = false;
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
-        if (
-          (!proveedor || d.proveedor === proveedor) &&
-          (!cliente || d.cliente === cliente) &&
-          (!puerto || d.puerto === puerto) &&
-          (!fecha || d.fecha === fecha)
-        ) {
-          encontrado = true;
-          const fila = `
-            <tr>
-              <td>${d.proveedor}</td>
-              <td>${d.cliente}</td>
-              <td>${d.camiones}</td>
-              <td><button class="btnEliminarExc" data-id="${docSnap.id}">❌ Eliminar</button></td>
-            </tr>`;
-          tablaExcepciones.innerHTML += fila;
-        }
+        const fila = `
+          <tr>
+            <td>${d.proveedor}</td>
+            <td>${d.cliente}</td>
+            <td>${d.camiones}</td>
+            <td><button class="btnEliminarExc" data-id="${docSnap.id}">❌</button></td>
+          </tr>`;
+        tablaExcepciones.innerHTML += fila;
       });
-
-      if (encontrado) {
-        excepcionesCard.classList.remove("hidden");
-      } else {
-        excepcionesCard.classList.add("hidden");
+      if (tablaExcepciones.innerHTML === "") {
+        tablaExcepciones.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888">No hay excepciones registradas</td></tr>';
       }
     }
+    cargarExcepciones();
 
-    // Guardar o actualizar stock
+    // Filtrar excepciones
+    buscarExcepcion.addEventListener("input", e => {
+      const texto = e.target.value.toLowerCase();
+      document.querySelectorAll("#tabla-excepciones tbody tr").forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(texto) ? "" : "none";
+      });
+    });
+
+    // Guardar stock
     btnGuardar.addEventListener("click", async () => {
       const proveedor = document.getElementById("proveedor").value.trim();
       const cantidad = parseInt(document.getElementById("cantidad").value);
@@ -284,86 +276,50 @@
       const fecha = document.getElementById("fecha").value;
       const puerto = document.getElementById("puerto").value.trim();
       const usuario = document.getElementById("usuario").value.trim();
-
       if (!proveedor || isNaN(cantidad) || !fecha || !usuario) {
-        alert("⚠️ Por favor, completa todos los campos obligatorios (Proveedor, Cantidad, Fecha, Usuario).");
+        alert("⚠️ Completa todos los campos obligatorios.");
         return;
       }
-
       const ref = doc(db, "proveedores", proveedor);
       const snap = await getDoc(ref);
-
       let nuevoStock = cantidad;
-      if (snap.exists()) {
-        const datos = snap.data();
-        nuevoStock = (datos.stock || 0) + cantidad;
-      }
-
-      await setDoc(ref, {
-        proveedor,
-        stock: nuevoStock,
-        fecha,
-        puerto,
-        usuario,
-        tn
-      });
-
-      alert(`✅ Stock actualizado para ${proveedor}: ${nuevoStock} unidades (TN: ${tn}).`);
-      document.querySelectorAll("#proveedor, #cantidad, #tn, #fecha, #puerto, #usuario").forEach(i => i.value = "");
+      if (snap.exists()) nuevoStock = (snap.data().stock || 0) + cantidad;
+      await setDoc(ref, { proveedor, stock: nuevoStock, fecha, puerto, usuario, tn });
+      alert(`✅ Stock actualizado para ${proveedor}`);
+      saveInputs();
     });
 
-    // Buscar datos
+    // Buscar
     btnBuscar.addEventListener("click", () => {
       const puerto = document.getElementById("filtroPuerto").value.trim();
       const fecha = document.getElementById("filtroFecha").value;
-      const cliente = document.getElementById("filtroCliente").value.trim();
       cargarDatos(puerto, fecha);
-      cargarExcepciones(document.getElementById("proveedor").value.trim(), cliente, puerto, fecha);
+      cargarExcepciones(); // se mantiene visible siempre
     });
 
-   // Registrar o actualizar excepción (SIN validar existencia previa del proveedor)
-btnExcepcion.addEventListener("click", async () => {
-  const proveedor = document.getElementById("excProveedor").value.trim();
-  const cliente   = document.getElementById("excCliente").value.trim();
-  const cantidad  = parseInt(document.getElementById("excCantidad").value);
-
-  if (!proveedor || !cliente || isNaN(cantidad)) {
-    alert("⚠️ Completa todos los campos de la excepción.");
-    return;
-  }
-
-  // Actualiza (o crea) el stock del proveedor directamente
-  const refProv = doc(db, "proveedores", proveedor);
-  const snap    = await getDoc(refProv);
-  const datos   = snap.exists() ? snap.data() : {};
-  const nuevoStock = (datos.stock || 0) + cantidad;
-
-  await setDoc(refProv, { ...datos, proveedor, stock: nuevoStock });
-
-  // Guarda / sobrescribe la excepción
-  const refExc = doc(db, "excepciones", `${proveedor}-${cliente}`);
-  await setDoc(refExc, { proveedor, cliente, camiones: cantidad });
-
-  alert(`🚚 Excepción aplicada correctamente a ${proveedor}.`);
-  const puerto  = document.getElementById("filtroPuerto").value.trim();
-  const fecha   = document.getElementById("filtroFecha").value;
-  const clienteFiltro = document.getElementById("filtroCliente").value.trim();
-  cargarExcepciones(proveedor, clienteFiltro, puerto, fecha);
-});
+    // Registrar excepción
+    btnExcepcion.addEventListener("click", async () => {
+      const proveedor = document.getElementById("excProveedor").value.trim();
+      const cliente = document.getElementById("excCliente").value.trim();
+      const cantidad = parseInt(document.getElementById("excCantidad").value);
+      if (!proveedor || !cliente || isNaN(cantidad)) {
+        alert("⚠️ Completa todos los campos de excepción.");
+        return;
+      }
+      const refExc = doc(db, "excepciones", `${proveedor}-${cliente}`);
+      await setDoc(refExc, { proveedor, cliente, camiones: cantidad });
+      alert(`🚚 Excepción registrada.`);
+      cargarExcepciones();
+    });
 
     // Eliminar excepción
     document.addEventListener("click", async e => {
       if (e.target.classList.contains("btnEliminarExc")) {
-        const id = e.target.dataset.id;
-        await deleteDoc(doc(db, "excepciones", id));
+        await deleteDoc(doc(db, "excepciones", e.target.dataset.id));
         alert("🗑️ Excepción eliminada.");
-        const puerto = document.getElementById("filtroPuerto").value.trim();
-        const fecha = document.getElementById("filtroFecha").value;
-        const cliente = document.getElementById("filtroCliente").value.trim();
-        cargarExcepciones(document.getElementById("proveedor").value.trim(), cliente, puerto, fecha);
+        cargarExcepciones();
       }
     });
   </script>
 </body>
 </html>
-
