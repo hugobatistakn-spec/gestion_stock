@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Stock de Transportes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #fff;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #eee;
+    }
+    .form-container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    input, button {
+      padding: 8px;
+      margin: 4px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>📦 Gestión de Stock de Transportes</h1>
+
+  <div class="form-container">
+    <h3>➕ Añadir / ➖ Reducir stock</h3>
+    <input type="text" id="proveedor" placeholder="Proveedor" required>
+    <input type="number" id="cantidad" placeholder="Cantidad (+ o -)">
+    <input type="date" id="fecha" required>
+    <input type="text" id="puerto" placeholder="Puerto">
+    <input type="text" id="usuario" placeholder="Usuario">
+    <button id="btnGuardar">Guardar cambios</button>
+  </div>
+
+  <h3>📊 Stock actual:</h3>
+  <table id="tabla-stock">
+    <thead>
+      <tr>
+        <th>Proveedor</th>
+        <th>Stock</th>
+        <th>Puerto</th>
+        <th>Fecha</th>
+        <th>Último usuario</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, query, where, updateDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    // 🔥 Tu configuración Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyC8qPpRUTOP5Ef7pf4DYXkTCZnTWVQwHHU",
+      authDomain: "gestion-stock-transportes.firebaseapp.com",
+      projectId: "gestion-stock-transportes",
+      storageBucket: "gestion-stock-transportes.firebasestorage.app",
+      messagingSenderId: "47030902783",
+      appId: "1:47030902783:web:ec7217b290a3d2fbad91ca"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const tablaBody = document.querySelector("#tabla-stock tbody");
+    const btnGuardar = document.getElementById("btnGuardar");
+
+    // 📥 Cargar datos al iniciar
+    async function cargarDatos() {
+      tablaBody.innerHTML = "";
+      const snapshot = await getDocs(collection(db, "proveedores"));
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        const fila = `
+          <tr>
+            <td>${d.proveedor}</td>
+            <td>${d.stock ?? 0}</td>
+            <td>${d.puerto ?? ""}</td>
+            <td>${d.fecha ?? ""}</td>
+            <td>${d.usuario ?? ""}</td>
+          </tr>`;
+        tablaBody.innerHTML += fila;
+      });
+    }
+
+    // ➕ / ➖ Guardar cambios
+    btnGuardar.addEventListener("click", async () => {
+      const proveedor = document.getElementById("proveedor").value.trim();
+      const cantidad = parseInt(document.getElementById("cantidad").value);
+      const fecha = document.getElementById("fecha").value;
+      const puerto = document.getElementById("puerto").value.trim();
+      const usuario = document.getElementById("usuario").value.trim();
+
+      if (!proveedor || isNaN(cantidad) || !fecha) {
+        alert("Por favor, rellena todos los campos obligatorios.");
+        return;
+      }
+
+      const ref = doc(db, "proveedores", proveedor);
+      const snap = await getDoc(ref);
+
+      let nuevoStock = cantidad;
+      if (snap.exists()) {
+        const datos = snap.data();
+        nuevoStock = (datos.stock || 0) + cantidad;
+      }
+
+      await setDoc(ref, {
+        proveedor,
+        stock: nuevoStock,
+        fecha,
+        puerto,
+        usuario
+      });
+
+      alert(`✅ Stock actualizado para ${proveedor}: ${nuevoStock}`);
+      cargarDatos();
+    });
+
+    // Cargar al abrir
+    cargarDatos();
+  </script>
+</body>
+</html>
