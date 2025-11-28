@@ -6,356 +6,822 @@
   <title>Gestión Intermodal</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #f3f6fc;
-      --card: #ffffff;
-      --primary: #007bff;
-      --primary-hover: #0056b3;
-      --text: #333;
-      --border: #e0e6ef;
-    }
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg);
-      margin: 0;
-      padding: 0;
-      color: var(--text);
-    }
-    header {
-      background-color: var(--primary);
-      color: #fff;
-      padding: 1rem 2rem;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    main {
-      max-width: 950px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
-    .card {
-      background-color: var(--card);
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      margin-bottom: 2rem;
-    }
-    input, button, select {
-      padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.95rem;
-      outline: none;
-      margin: 6px;
-    }
-    button {
-      background-color: var(--primary);
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-    button:hover {
-      background-color: var(--primary-hover);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-    th, td {
-      border-bottom: 1px solid var(--border);
-      padding: 10px;
-      text-align: left;
-    }
-    th {
-      background-color: #f0f4fa;
-      font-weight: 600;
-    }
-    tr:hover {
-      background-color: #f9fbff;
-    }
-    .hidden { display: none; }
-    footer {
-      text-align: center;
-      padding: 1rem;
-      color: #888;
-      font-size: 0.9rem;
-    }
-    .excepcion-form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 1rem;
-    }
+    :root{ --bg:#f3f6fc; --card:#fff; --primary:#007bff; --text:#222; --muted:#888; }
+    [data-theme="dark"]{ --bg:#0f1724; --card:#0b1220; --primary:#60a5fa; --text:#e6eef8; --muted:#9aa7bf; }
+    *{box-sizing:border-box} body{font-family:Inter,system-ui; background:var(--bg); color:var(--text); margin:0}
+    header{background:var(--primary); color:#fff; padding:1rem 1.25rem; display:flex;align-items:center;justify-content:space-between}
+    header h1{margin:0;font-size:1.1rem}
+    main{max-width:1100px;margin:1.25rem auto;padding:1rem}
+    .card{background:var(--card);border-radius:10px;padding:1rem;margin-bottom:1rem;box-shadow:0 6px 18px rgba(2,6,23,0.06)}
+    input,select,button{padding:8px 10px;border:1px solid #e6eef8;border-radius:8px;margin:6px; font-size:0.95rem}
+    button{background:var(--primary);color:#fff;border:none;cursor:pointer}
+    button.alt{background:#6c757d}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:8px;border-bottom:1px solid rgba(0,0,0,0.06);text-align:left;font-size:0.95rem}
+    th{background:rgba(0,0,0,0.02)}
+    .actions button{margin-right:6px}
+    .top-controls{display:flex;gap:10px;align-items:center}
+    #adminPanel{display:none;padding:12px;border-radius:8px;background:rgba(0,0,0,0.02);margin-top:8px}
+    #darkToggle{background:transparent;border:1px solid rgba(255,255,255,0.15);padding:6px 8px;border-radius:8px;color:#fff;cursor:pointer}
+    .badge{display:inline-block;padding:2px 6px;border-radius:6px;background:#ffeeba;color:#7a4b00;font-weight:600;font-size:0.8rem}
+    .excepcion-row{background: linear-gradient(90deg, rgba(255,248,225,0.6), transparent)}
+    .hint{color:var(--muted);font-size:0.85rem}
+    .small{font-size:0.85rem;color:var(--muted)}
+    .hidden{display:none}
+    .right{margin-left:auto}
+    pre#csvLog{background:rgba(0,0,0,.05);padding:8px;border-radius:6px;max-height:120px;overflow-y:auto}
   </style>
 </head>
-
 <body>
-  <header>
-    <h1>📦 Gestión Intermodal</h1>
-  </header>
+<header>
+  <h1>📦 Gestión Intermodal</h1>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button id="darkToggle" title="Cambiar tema">🌓</button>
+    <button id="adminBtn" title="Panel admin" style="background:#222;color:#fff;padding:6px 8px;border-radius:8px">🔒 Admin</button>
+  </div>
+</header>
 
-  <main>
-
-    <!-- FORMULARIO PRINCIPAL -->
-    <div class="card">
-      <h2>➕ Añadir / ➖ Reducir stock</h2>
-      <div>
-        <input type="text" id="proveedor" placeholder="Proveedor" required>
-        <input type="text" id="acuerdo" placeholder="Acuerdo de Stock">
-        <input type="number" id="cantidad" placeholder="Cantidad (+ o -)">
-        <input type="text" id="tn" placeholder="Tracking Number (TN)">
-        <input type="date" id="fecha" required>
-        <input type="text" id="puerto" placeholder="Puerto">
-        <input type="text" id="usuario" placeholder="Usuario" required>
-        <br>
-        <button id="btnGuardar">Guardar cambios</button>
-        <button id="btnLimpiarPrincipal" style="background:#6c757d;">🧹 Limpiar</button>
-      </div>
-    </div>
-
-    <!-- FILTRO DE BÚSQUEDA -->
-    <div class="card">
-      <h2>🔍 Buscar disponibilidad</h2>
-      <div>
-        <input type="date" id="filtroFecha" placeholder="Fecha">
-        <input type="text" id="filtroPuerto" placeholder="Puerto">
-        <input type="text" id="filtroCliente" placeholder="Cliente (para excepciones)">
-        <br>
+<main>
+  <!-- BUSCAR -->
+  <div class="card">
+    <h3>🔍 Buscar disponibilidad</h3>
+    <div style="display:flex;flex-wrap:wrap;align-items:center">
+      <input type="date" id="filtroFecha">
+      <input type="text" id="filtroPuerto" placeholder="Puerto">
+      <input type="text" id="filtroCliente" placeholder="Cliente">
+      <input type="text" id="filtroLocalidad" placeholder="Localidad">
+      <div style="margin-left:auto">
         <button id="btnBuscar">Buscar</button>
-        <button id="btnLimpiarBusqueda" style="background:#6c757d;">🧹 Limpiar</button>
+        <button id="btnLimpiarBusqueda" class="alt">🧹 Limpiar</button>
       </div>
     </div>
+    <div class="small hint">Cliente+Localidad → excepción; Fecha+Puerto → stock general</div>
+  </div>
 
-   <!-- DISPONIBILIDAD -->
-<div id="disponibilidadCard" class="card hidden">
-  <h2>📊 Disponibilidad actual</h2>
-  <table id="tabla-stock">
-    <thead>
-      <tr>
-        <th>Proveedor</th>
-        <th>Acuerdo de Stock</th>
-        <th>Disponibilidad</th>
-        <th>Puerto</th>
-        <th>Fecha</th>
-        <th>Usuario</th>
-        <th>TN</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
-
-    <!-- EXCEPCIONES -->
-    <div id="excepcionesCard" class="card">
-      <h2>🚨 Excepciones</h2>
-
-      <div class="excepcion-form">
-        <input type="text" id="excProveedor" placeholder="Proveedor">
-        <input type="text" id="excCliente" placeholder="Cliente">
-        <input type="number" id="excCantidad" placeholder="Cantidad (+ o -)">
-        <button id="btnExcepcion">Registrar / Actualizar</button>
-        <button id="btnLimpiarExcepcion" style="background:#6c757d;">🧹 Limpiar</button>
+  <!-- RESULTADOS -->
+  <div id="disponibilidadCard" class="card hidden">
+    <div style="display:flex;align-items:center">
+      <h3>📊 Stock actual</h3>
+      <div class="right" style="display:flex;gap:8px">
+        <button id="exportCsv">⬇️ Exportar CSV</button>
+        <button id="clearVisible" class="alt">🗑️ Borrar filas visibles</button>
       </div>
+    </div>
+    <table id="tabla-stock">
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Cliente</th>
+          <th>Disponibilidad</th>
+          <th>Puerto</th>
+          <th>Localidad</th>
+          <th>Fecha</th>
+          <th>Usuario</th>
+          <th>Notas</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div id="noResults" class="small" style="display:none;margin-top:8px">No hay resultados.</div>
+  </div>
 
-      <input type="text" id="busquedaExcepcion" placeholder="🔍 Buscar en excepciones" style="width:100%;margin-bottom:10px;">
+  <!-- AÑADIR / REDUCIR -->
+  <div class="card">
+    <h3>🚛 Gestionar Reserva 🚛</h3>
+    <div style="display:flex;flex-wrap:wrap;align-items:center">
+      <input type="text" id="proveedor" placeholder="Proveedor">
+      <input type="text" id="cliente" placeholder="Cliente (vacío = general)">
+      <input type="number" id="cantidad" placeholder="-  suma  /  +  resta" style="width:150px">
+      <input type="text" id="tn" placeholder="TN">
+      <input type="text" id="notasInput" placeholder="Notas">
+      <input type="date" id="fechaInput">
+      <input type="text" id="puertoInput" placeholder="Puerto">
+      <input type="text" id="localidadInput" placeholder="Localidad">
+      <input type="text" id="usuarioInput" placeholder="Usuario">
+      <div style="width:100%;display:flex;justify-content:flex-start;margin-top:6px">
+        <button id="btnGuardar">Guardar cambios</button>
+        <button id="btnLimpiarPrincipal" class="alt">🧹 Limpiar</button>
+      </div>
+    </div>
+    <div class="small hint">Gestionar Reserva de Transporte</div>
+  </div>
 
-      <table id="tabla-excepciones">
-        <thead>
-          <tr>
-            <th>Proveedor</th>
-            <th>Cliente</th>
-            <th>Camiones</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr id="sinExcepciones">
-            <td colspan="4" style="text-align:center;color:#888">No hay excepciones registradas</td>
-          </tr>
-        </tbody>
+  <!-- ADMIN -->
+  <div id="adminPanel" class="card">
+    <h3>🔐 Panel admin</h3>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="btnHistorial">Ver historial (movimientos)</button>
+      <button id="btnExportAll">Exportar todo movimientos (CSV)</button>
+      <button id="btnToggleMode" class="alt">Mostrar/Ocultar modo admin</button>
+    </div>
+    <div id="historial" style="margin-top:12px;display:none">
+      <h4>Historial (últimos 200)</h4>
+      <table id="tabla-movimientos">
+        <thead><tr><th>Fecha</th><th>Proveedor</th><th>Delta</th><th>Usuario</th><th>TN</th><th>Notas</th></tr></thead>
+        <tbody></tbody>
       </table>
     </div>
+    <!-- FORMULARIO DE EXCEPCIÓN (SIN TOCAR STOCK) -->
+    <div class="card" style="margin-top:1rem">
+      <h4>➕ Crear / editar excepción (sin modificar stock)</h4>
+      <div style="display:flex;flex-wrap:wrap;align-items:center">
+        <input type="text" id="admProveedor" placeholder="Proveedor">
+        <input type="text" id="admCliente" placeholder="Cliente">
+        <input type="text" id="admPuerto" placeholder="Puerto">
+        <input type="text" id="admLocalidad" placeholder="Localidad">
+        <input type="date" id="admFecha">
+        <input type="number" id="admAsignado" placeholder="Asignado" style="width:150px">
+        <input type="text" id="admTN" placeholder="TN">
+        <input type="text" id="admNotas" placeholder="Notas">
+        <input type="text" id="admUsuario" placeholder="Usuario">
+        <label style="display:flex;align-items:center;margin-left:8px">
+          <input type="checkbox" id="admModificaStock"> Modifica stock general
+        </label>
+        <div style="width:100%;display:flex;justify-content:flex-start;margin-top:6px">
+          <button id="btnAdmGuardarEx">Guardar excepción</button>
+          <button id="btnAdmLimpiarEx" class="alt">Limpiar</button>
+        </div>
+      </div>
+      <div class="small hint">Si «Modifica stock general» está activado, la cantidad sumará/restará; si no, solo crea/actualiza la excepción.</div>
+    </div>
+    <!-- CARGA MASIVA CSV -->
+    <div class="card" style="margin-top:1rem">
+      <h4>📁 Carga masiva excepciones (CSV)</h4>
+      <label style="font-size:0.9rem">Columnas: proveedor,cliente,puerto,localidad,fecha,asignado,tn,notas,usuario</label>
+      <input type="file" id="csvExcepciones" accept=".csv" style="margin-top:6px">
+      <label style="display:flex;align-items:center;margin-top:8px">
+        <input type="checkbox" id="modoPrueba" checked> 👀 Modo prueba (solo validar, no subir)
+      </label>
+      <button id="btnSubirCsvEx" class="alt">Subir CSV</button>
+      <!-- NUEVO BOTÓN STOCK GENERAL -->
+      <button id="btnSubirCsvStock" class="alt" style="margin-left:8px">Subir CSV (solo stock general)</button>
+      <pre id="csvLog" style="font-size:0.8rem;margin-top:8px;white-space:pre-wrap"></pre>
+    </div>
 
-  </main>
+<!-- CORREGIR CUALQUIER CAMPO (incluye cantidad) -->
+<div class="card" style="margin-top:1rem">
+  <h4>🔧 Corregir excepciones (CSV)</h4>
+  <label style="font-size:0.9rem">
+    Formato: proveedor,puerto,fecha,cliente,localidadAnt,localidadNueva,asignadoNuevo<br>
+    (deja vacío lo que NO quieras tocar)
+  </label>
+  <input type="file" id="csvCorregir" accept=".csv" style="margin-top:6px">
+  <button id="btnCorregirEx" class="alt">Corregir excepciones</button>
+  <pre id="corrLog" style="font-size:0.8rem;margin-top:8px;white-space:pre-wrap"></pre>
+</div>
 
-  <footer>Desarrollado por Hugo 🧠 | Firebase + Netlify</footer>
+<!-- BORRAR MASIVO -->
+<div class="card" style="margin-top:1rem">
+  <h4>🗑️ Borrar masivamente (CSV)</h4>
+  <label style="font-size:0.9rem">Formato: proveedor,puerto,fecha,cliente,localidad</label>
+  <input type="file" id="csvBorrar" accept=".csv" style="margin-top:6px">
+  <button id="btnBorrarMasivo" class="alt" style="background:#dc3545">Borrar por CSV</button>
+  <pre id="delLog" style="font-size:0.8rem;margin-top:8px;white-space:pre-wrap"></pre>
+</div>
+  </div>
+</main>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+<footer style="padding:12px;text-align:center;color:var(--muted)">Desarrollado por Hugo 🧠 | Firebase + Netlify</footer>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyC8qPpRUTOP5Ef7pf4DYXkTCZnTWVQwHHU",
-      authDomain: "gestion-stock-transportes.firebaseapp.com",
-      projectId: "gestion-stock-transportes",
-      storageBucket: "gestion-stock-transportes.appspot.com",
-      messagingSenderId: "47030902783",
-      appId: "1:47030902783:web:ec7217b290a3d2fbad91ca"
-    };
+<script type="module">
+  // ---------- FIREBASE ----------
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import {
+    getFirestore, collection, getDocs, query, addDoc, doc, getDoc, setDoc, deleteDoc, orderBy, limit, where, writeBatch
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  const firebaseConfig = {
+    apiKey: "AIzaSyC8qPpRUTOP5Ef7pf4DYXkTCZnTWVQwHHU",
+    authDomain: "gestion-stock-transportes.firebaseapp.com",
+    projectId: "gestion-stock-transportes",
+    storageBucket: "gestion-stock-transportes.appspot.com",
+    messagingSenderId: "47030902783",
+    appId: "1:47030902783:web:ec7217b290a3d2fbad91ca"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    const tablaBody = document.querySelector("#tabla-stock tbody");
-    const tablaExcepciones = document.querySelector("#tabla-excepciones tbody");
-    const disponibilidadCard = document.getElementById("disponibilidadCard");
+  // ---------- DOM ----------
+  const tablaBody       = document.querySelector("#tabla-stock tbody");
+  const disponibilidadCard = document.getElementById("disponibilidadCard");
+  const noResults       = document.getElementById("noResults");
+  const btnBuscar       = document.getElementById("btnBuscar");
+  const btnGuardar      = document.getElementById("btnGuardar");
+  const btnLimpiarPrincipal = document.getElementById("btnLimpiarPrincipal");
+  const btnLimpiarBusqueda  = document.getElementById("btnLimpiarBusqueda");
+  const exportCsvBtn    = document.getElementById("exportCsv");
+  const clearVisibleBtn = document.getElementById("clearVisible");
+  const adminBtn        = document.getElementById("adminBtn");
+  const adminPanel      = document.getElementById("adminPanel");
+  const btnHistorial    = document.getElementById("btnHistorial");
+  const historialDiv    = document.getElementById("historial");
+  const tablaMov        = document.querySelector("#tabla-movimientos tbody");
+  const btnExportAll    = document.getElementById("btnExportAll");
+  const darkToggle      = document.getElementById("darkToggle");
 
-    const btnGuardar = document.getElementById("btnGuardar");
-    const btnBuscar = document.getElementById("btnBuscar");
-    const btnExcepcion = document.getElementById("btnExcepcion");
+  // ---------- TEMA ----------
+  function applyTheme(theme) {
+    if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', theme);
+  }
+  darkToggle.addEventListener('click', () => {
+    const cur = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(cur);
+  });
+  applyTheme(localStorage.getItem('theme') || 'light');
 
-    // ======== GUARDAR STOCK ========
-    btnGuardar.addEventListener("click", async () => {
-      const proveedor = document.getElementById("proveedor").value.trim();
-      const acuerdo = parseInt(document.getElementById("acuerdo").value) || 0;
-      const cantidad = parseInt(document.getElementById("cantidad").value);
-      const tn = document.getElementById("tn").value.trim();
-      const fecha = document.getElementById("fecha").value;
-      const puerto = document.getElementById("puerto").value.trim();
-      const usuario = document.getElementById("usuario").value.trim();
+  // ---------- UTILS ----------
+  function csvFromArray(rows) {
+    return rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+  }
+  function downloadFile(name, content, type = 'text/csv') {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href: url, download: name });
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
-      if (!proveedor || isNaN(cantidad) || !fecha || !usuario) {
-        alert("⚠️ Completa todos los campos obligatorios.");
-        return;
-      }
+  // ---------- NORMALIZACIÓN ----------
+  function norm(str) {
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .trim()
+      .replace(/[^A-Z0-9\/\+_]/g, '');
+  }
 
-      const ref = doc(db, "proveedores", proveedor);
-      const snap = await getDoc(ref);
+  // ---------- BUSCAR ----------
+  async function buscarYMostrar() {
+    tablaBody.innerHTML = "";
+    noResults.style.display = 'none';
 
-      let nuevaDisponibilidad = cantidad;
-      if (snap.exists()) {
-        const datos = snap.data();
-        nuevaDisponibilidad = (datos.disponibilidad || 0) + cantidad;
-      }
+    const fecha     = document.getElementById("filtroFecha").value;
+    const puertoRaw = document.getElementById("filtroPuerto").value.trim().toUpperCase();
+    const clienteRaw= document.getElementById("filtroCliente").value.trim().toUpperCase();
+    const localRaw  = document.getElementById("filtroLocalidad").value.trim().toUpperCase();
 
-      await setDoc(ref, {
-        proveedor,
-        acuerdo,
-        disponibilidad: nuevaDisponibilidad,
-        fecha,
-        puerto,
-        usuario,
-        tn
+    if (clienteRaw && localRaw) {
+      let qEx = collection(db, "excepciones");
+      const constraintsEx = [];
+      if (fecha)  constraintsEx.push(where("fecha",  "==", fecha));
+      if (puertoRaw) constraintsEx.push(where("puerto", "==", puertoRaw));
+      if (clienteRaw) constraintsEx.push(where("cliente", "==", clienteRaw));
+      if (localRaw)  constraintsEx.push(where("localidad", "==", localRaw));
+      qEx = query(qEx, ...constraintsEx);
+
+      const snapEx = await getDocs(qEx);
+      let found = false;
+      snapEx.forEach(s => {
+        const d = s.data();
+        if ((d.puerto || '').toUpperCase().startsWith(puertoRaw) &&
+            (d.cliente || '').toUpperCase().startsWith(clienteRaw) &&
+            (d.localidad || '').toUpperCase().startsWith(localRaw)) {
+          found = true;
+          pintarFilaExcepcion(d, s.id);
+        }
       });
+      if (found) { disponibilidadCard.classList.remove('hidden'); return; }
+      let qGen = collection(db, "stockGeneral");
+      const constraintsGen = [];
+      if (fecha)  constraintsGen.push(where("fecha",  "==", fecha));
+      if (puertoRaw) constraintsGen.push(where("puerto", ">=", puertoRaw));
+      qGen = query(qGen, ...constraintsGen);
+      const snapGen = await getDocs(qGen);
+      let foundGen = false;
+      snapGen.forEach(s => {
+        const d = s.data();
+        if ((d.puerto || '').toUpperCase().startsWith(puertoRaw)) {
+          foundGen = true;
+          pintarFilaGeneral(d, s.id);
+        }
+      });
+      if (foundGen) { disponibilidadCard.classList.remove('hidden'); return; }
+      noResults.style.display = 'block'; return;
+    }
 
-      alert(`✅ Datos actualizados para ${proveedor}.`);
+    let qGen = collection(db, "stockGeneral");
+    const constraintsGen = [];
+    if (fecha)  constraintsGen.push(where("fecha",  "==", fecha));
+    if (puertoRaw) constraintsGen.push(where("puerto", "==", puertoRaw));
+    qGen = query(qGen, ...constraintsGen);
+    const snapGen = await getDocs(qGen);
+    let found = false;
+    snapGen.forEach(s => {
+      const d = s.data();
+      if ((d.puerto || '').toUpperCase().startsWith(puertoRaw)) {
+        found = true;
+        pintarFilaGeneral(d, s.id);
+      }
     });
+    if (found) { disponibilidadCard.classList.remove('hidden'); return; }
+    noResults.style.display = 'block';
+  }
 
-    // ======== CARGAR DATOS ========
-async function cargarDatos(puerto, fecha) {
-  tablaBody.innerHTML = "";
-  const snapshot = await getDocs(collection(db, "proveedores"));
-  let encontrado = false;
-  snapshot.forEach(docSnap => {
-    const d = docSnap.data();
-    if ((!puerto || d.puerto === puerto) && (!fecha || d.fecha === fecha)) {
-      encontrado = true;
-      const fila = `
-        <tr>
-          <td>${d.proveedor}</td>
-          <td>${d.acuerdo || 0}</td>
-          <td>${d.disponibilidad || 0}</td>
-          <td>${d.puerto || ""}</td>
-          <td>${d.fecha || ""}</td>
-          <td>${d.usuario || ""}</td>
-          <td>${d.tn || ""}</td>
-          <td><button class="btnEliminarProv" data-id="${docSnap.id}" style="background:#dc3545;">❌</button></td>
-        </tr>`;
-      tablaBody.innerHTML += fila;
+  function pintarFilaGeneral(d, id) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${d.proveedor || ''}</td>
+      <td>-</td>
+      <td>${Math.abs(d.disponibilidad ?? 0)}</td>
+      <td>${d.puerto || ''}</td>
+      <td>-</td>
+      <td>${d.fecha || ''}</td>
+      <td>${d.usuario || ''}</td>
+      <td></td>
+      <td class="actions"><button class="btnEliminarGeneral" data-id="${id}" style="background:#dc3545">❌</button></td>`;
+    tablaBody.appendChild(tr);
+  }
+
+  function pintarFilaExcepcion(d, id) {
+    const tr = document.createElement('tr');
+    tr.classList.add('excepcion-row');
+    tr.innerHTML = `
+      <td>${d.proveedor || ''} <span class="badge">Excepción</span></td>
+      <td>${d.cliente || ''}</td>
+      <td>${Math.abs(d.asignado ?? 0)}</td>
+      <td>${d.puerto || ''}</td>
+      <td>${d.localidad || ''}</td>
+      <td>${d.fecha || ''}</td>
+      <td>${d.usuario || ''}</td>
+      <td>${d.notasAcum || ''}</td>
+      <td class="actions"><button class="btnEliminarExcepcion" data-id="${id}" style="background:#dc3545">❌</button></td>`;
+    tablaBody.appendChild(tr);
+  }
+
+  btnBuscar.addEventListener('click', buscarYMostrar);
+
+  document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('btnEliminarGeneral')) {
+      if (!confirm('¿Eliminar stock general?')) return;
+      await deleteDoc(doc(db, 'stockGeneral', e.target.dataset.id));
+      e.target.closest('tr').remove();
+    }
+    if (e.target.classList.contains('btnEliminarExcepcion')) {
+      if (!confirm('¿Eliminar excepción? (No se devuelve al stock)')) return;
+      await deleteDoc(doc(db, 'excepciones', e.target.dataset.id));
+      e.target.closest('tr').remove();
     }
   });
-  disponibilidadCard.classList.toggle("hidden", !encontrado);
-}
 
-// ======== ELIMINAR PROVEEDOR ========
-document.addEventListener("click", async e => {
-  if (e.target.classList.contains("btnEliminarProv")) {
-    const id = e.target.dataset.id;
-    const confirmar = confirm("¿Seguro que quieres eliminar este proveedor?");
-    if (confirmar) {
-      await deleteDoc(doc(db, "proveedores", id));
-      e.target.closest("tr").remove();
-      alert("🗑️ Registro eliminado correctamente.");
-      const hayFilas = tablaBody.querySelectorAll("tr").length > 0;
-      if (!hayFilas) disponibilidadCard.classList.add("hidden");
+  // ---------- GUARDAR ----------
+  btnGuardar.addEventListener('click', async () => {
+    const proveedor = document.getElementById('proveedor').value.trim();
+    const cliente   = norm(document.getElementById('cliente').value);
+    const cantidad  = parseInt(document.getElementById('cantidad').value);
+    const tnActual  = document.getElementById('tn').value.trim() || '';
+    const notasActual = document.getElementById('notasInput').value.trim() || '';
+    const fecha     = document.getElementById('fechaInput').value;
+    const puerto    = norm(document.getElementById('puertoInput').value);
+    const localidad = norm(document.getElementById('localidadInput').value);
+    const usuario   = document.getElementById('usuarioInput').value.trim() || '';
+
+    if (!proveedor || isNaN(cantidad) || !fecha) {
+      alert('Completa proveedor, cantidad y fecha'); return;
+    }
+
+    const esExcepcion = !!(cliente && localidad);
+    const batch       = writeBatch(db);
+    const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
+    const genRef = doc(db, 'stockGeneral', genId);
+    const genSnap= await getDoc(genRef);
+    let dispGeneral = genSnap.exists() ? (genSnap.data().disponibilidad || 0) : 0;
+
+    if (esExcepcion) {
+      const nuevoGeneral = dispGeneral + cantidad;
+      if (nuevoGeneral < 0) { alert('No hay stock suficiente en el general'); return; }
+      batch.set(genRef, {
+        proveedor, proveedorNorm: norm(proveedor),
+        fecha, puerto, puertoNorm: puerto,
+        disponibilidad: nuevoGeneral,
+        usuario: usuario || '', tn: ''
+      }, { merge: true });
+
+      const exId  = `${norm(proveedor)}::${fecha}::${puerto}::${cliente}::${localidad}`;
+      const exRef = doc(db, 'excepciones', exId);
+      const exSnap= await getDoc(exRef);
+      const asignadoAnterior = exSnap.exists() ? (exSnap.data().asignado || 0) : 0;
+      const nuevoAsignado    = asignadoAnterior + cantidad;
+      let tnAcum   = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
+      let notasAcum= exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
+      if (tnActual)   tnAcum += (tnAcum ? ' | ' : '') + `${tnActual}`;
+      if (notasActual) notasAcum += (notasAcum ? ' | ' : '') + `${notasActual}`;
+
+      batch.set(exRef, {
+        proveedor, proveedorNorm: norm(proveedor),
+        cliente,   clienteNorm:   cliente,
+        fecha,     puerto,        puertoNorm: puerto,
+        localidad, localidadNorm: localidad,
+        asignado: nuevoAsignado,
+        usuario: usuario || '',
+        tnAcum: tnAcum,
+        notasAcum: notasAcum
+      }, { merge: true });
+
+      await batch.commit();
+      alert('✅ Stock general y excepción actualizados.');
+      await buscarYMostrar(); return;
+    }
+
+    const nuevoGeneral = dispGeneral + cantidad;
+    batch.set(genRef, {
+      proveedor, proveedorNorm: norm(proveedor),
+      fecha, puerto, puertoNorm: puerto,
+      disponibilidad: nuevoGeneral,
+      usuario: usuario || '', tn: ''
+    }, { merge: true });
+
+    await batch.commit();
+    alert('✅ Stock general actualizado.');
+    await buscarYMostrar();
+  });
+
+  // ---------- LIMPIAR ----------
+  btnLimpiarPrincipal.addEventListener('click', () => {
+    document.querySelectorAll('#proveedor,#cliente,#cantidad,#tn,#notasInput,#fechaInput,#puertoInput,#localidadInput,#usuarioInput').forEach(i => i.value = '');
+  });
+  btnLimpiarBusqueda.addEventListener('click', () => {
+    document.querySelectorAll('#filtroFecha,#filtroPuerto,#filtroCliente,#filtroLocalidad').forEach(i => i.value = '');
+    tablaBody.innerHTML = '';
+    disponibilidadCard.classList.add('hidden');
+    noResults.style.display = 'none';
+  });
+
+  // ---------- EXPORTAR ----------
+  exportCsvBtn.addEventListener('click', () => {
+    const rows = [];
+    rows.push(['Proveedor', 'Cliente', 'Disponibilidad/Asignado', 'Puerto', 'Localidad', 'Fecha', 'Usuario', 'Notas']);
+    document.querySelectorAll('#tabla-stock tbody tr').forEach(tr => {
+      const cols = Array.from(tr.querySelectorAll('td')).slice(0, 8).map(td => td.textContent.trim());
+      if (cols.length) rows.push(cols);
+    });
+    downloadFile('disponibilidad.csv', csvFromArray(rows));
+  });
+
+  clearVisibleBtn.addEventListener('click', async () => {
+    if (!confirm('¿Borrar todos los registros visibles en la tabla? (Esto eliminará los documentos en Firestore)')) return;
+    const btnsGen = document.querySelectorAll('#tabla-stock tbody .btnEliminarGeneral');
+    const btnsEx  = document.querySelectorAll('#tabla-stock tbody .btnEliminarExcepcion');
+    for (const b of [...btnsGen, ...btnsEx]) {
+      const coleccion = b.classList.contains('btnEliminarGeneral') ? 'stockGeneral' : 'excepciones';
+      await deleteDoc(doc(db, coleccion, b.dataset.id));
+      b.closest('tr').remove();
+    }
+    if (!document.querySelectorAll('#tabla-stock tbody tr').length) disponibilidadCard.classList.add('hidden');
+    alert('🗑️ Filas visibles eliminadas.');
+  });
+
+  // ---------- ADMIN ----------
+  adminBtn.addEventListener('click', async () => {
+    const pw = prompt('Introduce contraseña admin:');
+    if (pw === 'admin123') {
+      adminPanel.style.display = adminPanel.style.display === 'block' ? 'none' : 'block';
+    } else {
+      alert('Contraseña incorrecta.');
+    }
+  });
+
+  btnHistorial.addEventListener('click', async () => {
+    historialDiv.style.display = historialDiv.style.display === 'block' ? 'none' : 'block';
+    if (historialDiv.style.display === 'block') {
+      tablaMov.innerHTML = '';
+      const movsSnap = await getDocs(query(collection(db, 'movimientos'), orderBy('fechaMovimiento', 'desc'), limit(200)));
+      movsSnap.forEach(s => {
+        const d = s.data();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${d.fechaMovimiento || ''}</td><td>${d.proveedor || ''}</td><td>${d.delta || ''}</td><td>${d.usuario || ''}</td><td>${d.tnAcum || ''}</td><td>${d.notasAcum || ''}</td>`;
+        tablaMov.appendChild(tr);
+      });
+    }
+  });
+
+  btnExportAll.addEventListener('click', async () => {
+    const rows = [['fechaMovimiento', 'proveedor', 'delta', 'usuario', 'tnAcum', 'notasAcum', 'fecha', 'puerto', 'localidad', 'cliente']];
+    const movsSnap = await getDocs(collection(db, 'movimientos'));
+    movsSnap.forEach(s => {
+      const d = s.data();
+      rows.push([d.fechaMovimiento || '', d.proveedor || '', d.delta || '', d.usuario || '', d.tnAcum || '', d.notasAcum || '', d.fecha || '', d.puerto || '', d.localidad || '', d.cliente || '']);
+    });
+    downloadFile('movimientos_all.csv', csvFromArray(rows));
+  });
+
+  // ---------- FORMULARIO ADMIN DE EXCEPCIÓN ----------
+  const btnAdmGuardarEx = document.getElementById('btnAdmGuardarEx');
+  const btnAdmLimpiarEx = document.getElementById('btnAdmLimpiarEx');
+
+  btnAdmGuardarEx.addEventListener('click', async () => {
+    const proveedor = document.getElementById('admProveedor').value.trim();
+    const cliente   = norm(document.getElementById('admCliente').value);
+    const puerto    = norm(document.getElementById('admPuerto').value);
+    const localidad = norm(document.getElementById('admLocalidad').value);
+    const fecha     = document.getElementById('admFecha').value;
+    const asignado  = parseInt(document.getElementById('admAsignado').value);
+    const tn        = document.getElementById('admTN').value.trim() || '';
+    const notas     = document.getElementById('admNotas').value.trim() || '';
+    const usuario   = document.getElementById('admUsuario').value.trim() || '';
+    const modifica  = document.getElementById('admModificaStock').checked;
+
+    if (!proveedor || !cliente || !localidad || !fecha || isNaN(asignado)) {
+      alert('Completa proveedor, cliente, localidad, fecha y asignado'); return;
+    }
+
+    const batch = writeBatch(db);
+    const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
+    const genRef = doc(db, 'stockGeneral', genId);
+    const exId   = `${norm(proveedor)}::${fecha}::${puerto}::${cliente}::${localidad}`;
+    const exRef  = doc(db, 'excepciones', exId);
+
+    if (modifica) {
+      const genSnap = await getDoc(genRef);
+      let dispGeneral = genSnap.exists() ? (genSnap.data().disponibilidad || 0) : 0;
+      const nuevoGeneral = dispGeneral + asignado;
+      if (nuevoGeneral < 0) { alert('Stock insuficiente'); return; }
+      batch.set(genRef, {
+        proveedor, proveedorNorm: norm(proveedor),
+        fecha, puerto, puertoNorm: puerto,
+        disponibilidad: nuevoGeneral,
+        usuario: usuario || '', tn: ''
+      }, { merge: true });
+    }
+
+    const exSnap = await getDoc(exRef);
+    let asignadoAnt = exSnap.exists() ? (exSnap.data().asignado || 0) : 0;
+    let tnAcum   = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
+    let notasAcum= exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
+    if (tn)   tnAcum   += (tnAcum   ? ' | ' : '') + tn;
+    if (notas) notasAcum += (notasAcum ? ' | ' : '') + notas;
+
+    batch.set(exRef, {
+      proveedor, proveedorNorm: norm(proveedor),
+      cliente,   clienteNorm:   cliente,
+      fecha,     puerto,        puertoNorm: puerto,
+      localidad, localidadNorm: localidad,
+      asignado: asignadoAnt + asignado,
+      usuario: usuario || '',
+      tnAcum, notasAcum
+    }, { merge: true });
+
+    await batch.commit();
+    alert(modifica ? '✅ Excepción creada y stock actualizado.' : '✅ Excepción creada sin tocar stock.');
+    // NO se limpia el formulario para que los campos queden tal cual
+    await buscarYMostrar();
+  });
+
+  btnAdmLimpiarEx.addEventListener('click', limpiaAdmEx);
+
+  function limpiaAdmEx() {
+    document.querySelectorAll('#admProveedor,#admCliente,#admPuerto,#admLocalidad,#admFecha,#admAsignado,#admTN,#admNotas,#admUsuario').forEach(i => i.value = '');
+    document.getElementById('admModificaStock').checked = false;
+  }
+
+  // ---------- CARGA MASIVA EXCEPCIONES (solo excepciones, NO stockGeneral) ----------
+  document.getElementById('btnSubirCsvEx').addEventListener('click', async () => {
+    const file = document.getElementById('csvExcepciones').files[0];
+    if (!file) { alert('Selecciona un archivo CSV'); return; }
+    const log = document.getElementById('csvLog');
+    log.textContent = 'Procesando EXCEPCIONES...\n';
+
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    const headers = lines.shift().split(',').map(h => h.trim().toLowerCase().replace(/\s+/g,''));
+
+    const required = ['proveedor','cliente','puerto','localidad','fecha','asignado'];
+    const missing = required.filter(h => !headers.includes(h));
+    if (missing.length) { log.textContent = `❌ Faltan columnas: ${missing.join(', ')}`; return; }
+
+    let batch = writeBatch(db);
+    let ok = 0, err = 0;
+
+    for (const raw of lines) {
+      const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
+      const row = {};
+      headers.forEach((h, i) => row[h] = cols[i] || '');
+
+      const proveedor       = row.proveedor;
+      const clienteOriginal = row.cliente.trim();
+      const clienteNorm     = norm(clienteOriginal);
+      const puerto          = norm(row.puerto);
+      const localidadOriginal = row.localidad.trim();
+      const localidadNorm     = norm(localidadOriginal);
+
+      let fecha = row.fecha.trim().replace(/"/g, '');
+      if (fecha.includes('/')) {
+        const [d, m, a] = fecha.split('/');
+        fecha = `${a}-${m}-${d}`;
+      }
+
+      const asignado  = parseInt(row.asignado);
+      const tn        = row.tn || '';
+      const notas     = row.notas || '';
+      const usuario   = row.usuario || '';
+
+      if (!proveedor || !clienteOriginal || !localidadOriginal || !fecha || isNaN(asignado)) { err++; continue; }
+
+      // =====  ⬇️  NADA de stockGeneral  ⬇️  =====
+      const exId   = `${norm(proveedor)}::${fecha}::${norm(puerto)}::${clienteNorm}::${localidadNorm}`;
+      const exRef  = doc(db, 'excepciones', exId);
+
+      const exSnap = await getDoc(exRef);
+      const asignadoAnt = exSnap.exists() ? (exSnap.data().asignado || 0) : 0;
+
+      if (document.getElementById('modoPrueba')?.checked) {
+        console.log('ID excepción:', exId, 'datos:', {
+          asignado: asignadoAnt + asignado,
+          fecha, cliente: clienteOriginal, puerto, localidad: localidadOriginal, proveedor
+        });
+        ok++; continue;
+      }
+
+      let tnAcum    = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
+      let notasAcum = exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
+      if (tn)    tnAcum   += (tnAcum   ? ' | ' : '') + tn;
+      if (notas) notasAcum += (notasAcum ? ' | ' : '') + notas;
+
+      batch.set(exRef, {
+        proveedor,
+        cliente     : clienteOriginal,
+        clienteNorm : clienteNorm,
+        fecha,
+        puerto,
+        puertoNorm  : norm(puerto),
+        localidad   : localidadOriginal,
+        localidadNorm: localidadNorm,
+        asignado: asignadoAnt + asignado,
+        usuario: usuario || '',
+        tnAcum,
+        notasAcum
+      }, { merge: true });
+
+      ok++;
+      if ((ok + err) % 450 === 0) {
+        await batch.commit();
+        batch = writeBatch(db);
+      }
+    }
+
+    if (!document.getElementById('modoPrueba')?.checked) {
+      try { await batch.commit(); } catch (e) { log.textContent += 'Error final: ' + e.message; }
+    }
+    log.textContent = `✅ ${ok} excepciones procesadas. ❌ ${err} errores.`;
+    if (!document.getElementById('modoPrueba')?.checked) await buscarYMostrar();
+  });
+
+  // ---------- CARGA MASIVA STOCK GENERAL (solo stock, NO excepciones) ----------
+  document.getElementById('btnSubirCsvStock').addEventListener('click', async () => {
+    const file = document.getElementById('csvExcepciones').files[0]; // re-usamos el input
+    if (!file) { alert('Selecciona un archivo CSV'); return; }
+    const log = document.getElementById('csvLog');
+    log.textContent = 'Procesando STOCK GENERAL...\n';
+
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    const headers = lines.shift().split(',').map(h => h.trim().toLowerCase().replace(/\s+/g,''));
+
+    const required = ['proveedor','puerto','fecha','asignado']; // cliente & localidad opcionales
+    const missing = required.filter(h => !headers.includes(h));
+    if (missing.length) { log.textContent = `❌ Faltan columnas: ${missing.join(', ')}`; return; }
+
+    let batch = writeBatch(db);
+    let ok = 0, err = 0;
+
+    for (const raw of lines) {
+      const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
+      const row = {};
+      headers.forEach((h, i) => row[h] = cols[i] || '');
+
+      const proveedor = row.proveedor.trim();
+      const puerto    = norm(row.puerto);
+      let fecha = row.fecha.trim().replace(/"/g, '');
+      if (fecha.includes('/')) { const [d, m, a] = fecha.split('/'); fecha = `${a}-${m}-${d}`; }
+      const asignado = parseInt(row.asignado);
+      const usuario = row.usuario || '';
+      const tn = row.tn || '';
+      const notas = row.notas || '';
+
+      // >>>  FILTRO  :  solo filas SIN cliente ni localidad  (stock general)  <<<
+      if (!proveedor || !puerto || !fecha || isNaN(asignado) || row.cliente || row.localidad) { err++; continue; }
+
+      const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
+      const genRef = doc(db, 'stockGeneral', genId);
+
+      const snap = await getDoc(genRef);
+      const dispActual = snap.exists() ? (snap.data().disponibilidad || 0) : 0;
+      const nuevaDisp  = dispActual + asignado;
+
+      if (document.getElementById('modoPrueba')?.checked) {
+        console.log('ID stock:', genId, 'delta:', asignado, 'nuevo:', nuevaDisp);
+        ok++; continue;
+      }
+
+      batch.set(genRef, {
+        proveedor,
+        proveedorNorm: norm(proveedor),
+        fecha,
+        puerto,
+        puertoNorm: puerto,
+        disponibilidad: nuevaDisp,
+        usuario,
+        tn
+      }, { merge: true });
+
+      ok++;
+      if ((ok + err) % 450 === 0) { await batch.commit(); batch = writeBatch(db); }
+    }
+
+    if (!document.getElementById('modoPrueba')?.checked) {
+      try { await batch.commit(); } catch (e) { log.textContent += 'Error final: ' + e.message; }
+    }
+    log.textContent = `✅ ${ok} stocks procesados. ❌ ${err} filas descartadas.`;
+    if (!document.getElementById('modoPrueba')?.checked) await buscarYMostrar();
+  });
+
+  // Inicial
+  adminPanel.style.display = 'none';
+// ---------- CORREGIR CUALQUIER CAMPO (incluye cantidad) ----------
+document.getElementById('btnCorregirEx').addEventListener('click', async () => {
+  const file = document.getElementById('csvCorregir').files[0];
+  if (!file) { alert('Selecciona el CSV de corrección'); return; }
+  const log = document.getElementById('corrLog');
+  log.textContent = 'Corrigiendo...\n';
+
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const headers = lines.shift().split(',').map(h => h.trim().toLowerCase());
+
+  // columnas obligatorias de identificación
+  const reqId = ['proveedor','puerto','fecha','cliente','localidadant','localidadnueva'];
+  const miss = reqId.filter(h => !headers.includes(h));
+  if (miss.length) { log.textContent = `❌ Faltan: ${miss.join(', ')}`; return; }
+
+  let ok = 0, err = 0;
+  for (const raw of lines) {
+    const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
+    if (cols.length < reqId.length) { err++; continue; }
+    const [prov, pt, fec, cli, locAnt, locNue] = cols.slice(0, 6);
+    const asignadoNuevo = cols[6] ? parseInt(cols[6]) : null; // ← puede estar vacío
+
+    if (!prov || !pt || !fec || !cli || !locAnt || !locNue) { err++; continue; }
+
+    const fecha = fec.includes('/') ? fec.split('/').reverse().join('-') : fec;
+    const exId = `${norm(prov)}::${fecha}::${norm(pt)}::${norm(cli)}::${norm(locAnt)}`;
+    const ref = doc(db, 'excepciones', exId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) { err++; continue; }
+
+    // campos que vamos a actualizar
+    const cambios = {
+      localidad: locNue.trim(),
+      localidadNorm: norm(locNue)
+    };
+    if (!isNaN(asignadoNuevo)) cambios.asignado = asignadoNuevo;
+
+    await setDoc(ref, cambios, { merge: true });
+    ok++;
+  }
+  log.textContent = `✅ ${ok} excepciones corregidas. ❌ ${err} errores.`;
+  await buscarYMostrar();
+});
+// ---------- BORRAR MASIVAMENTE ----------
+document.getElementById('btnBorrarMasivo').addEventListener('click', async () => {
+  const file = document.getElementById('csvBorrar').files[0];
+  if (!file) { alert('Selecciona el CSV a borrar'); return; }
+  if (!confirm('⚠️ Vas a BORRAR los documentos del CSV. ¿Continuar?')) return;
+  const log = document.getElementById('delLog');
+  log.textContent = 'Borrando...\n';
+
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const headers = lines.shift().split(',').map(h => h.trim().toLowerCase());
+
+  const req = ['proveedor','puerto','fecha','cliente','localidad'];
+  const miss = req.filter(h => !headers.includes(h));
+  if (miss.length) { log.textContent = `❌ Faltan: ${miss.join(', ')}`; return; }
+
+  let ok = 0, err = 0;
+  for (const raw of lines) {
+    const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
+    if (cols.length < req.length) { err++; continue; }
+    const [prov, pt, fec, cli, loc] = cols;
+    if (!prov || !pt || !fec || !cli || !loc) { err++; continue; }
+
+    const fecha = fec.includes('/') ? fec.split('/').reverse().join('-') : fec;
+    const exId = `${norm(prov)}::${fecha}::${norm(pt)}::${norm(cli)}::${norm(loc)}`;
+    try {
+      await deleteDoc(doc(db, 'excepciones', exId));
+      ok++;
+    } catch (e) {
+      err++;
     }
   }
+  log.textContent = `🗑️ ${ok} borrados. ❌ ${err} errores.`;
+  await buscarYMostrar();
 });
 
-
-    // ======== LIMPIAR CAMPOS ========
-    document.getElementById("btnLimpiarPrincipal").addEventListener("click", () => {
-      document.querySelectorAll("#proveedor,#acuerdo,#cantidad,#tn,#fecha,#puerto,#usuario").forEach(i => i.value = "");
-    });
-
-    document.getElementById("btnLimpiarBusqueda").addEventListener("click", () => {
-      document.querySelectorAll("#filtroFecha,#filtroPuerto,#filtroCliente").forEach(i => i.value = "");
-      disponibilidadCard.classList.add("hidden");
-    });
-
-    document.getElementById("btnLimpiarExcepcion").addEventListener("click", () => {
-      document.querySelectorAll("#excProveedor,#excCliente,#excCantidad,#busquedaExcepcion").forEach(i => i.value = "");
-      cargarExcepciones();
-    });
-
-    // ======== BUSCAR ========
-    btnBuscar.addEventListener("click", () => {
-      const puerto = document.getElementById("filtroPuerto").value.trim();
-      const fecha = document.getElementById("filtroFecha").value;
-      cargarDatos(puerto, fecha);
-      cargarExcepciones();
-    });
-
-    // ======== EXCEPCIONES ========
-    async function cargarExcepciones() {
-      tablaExcepciones.innerHTML = "";
-      const snapshot = await getDocs(collection(db, "excepciones"));
-      let hay = false;
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
-        const fila = `
-          <tr>
-            <td>${d.proveedor}</td>
-            <td>${d.cliente}</td>
-            <td>${d.camiones}</td>
-            <td><button class="btnEliminarExc" data-id="${docSnap.id}">❌</button></td>
-          </tr>`;
-        tablaExcepciones.innerHTML += fila;
-        hay = true;
-      });
-      if (!hay) tablaExcepciones.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#888">No hay excepciones registradas</td></tr>`;
-    }
-
-    btnExcepcion.addEventListener("click", async () => {
-      const proveedor = document.getElementById("excProveedor").value.trim();
-      const cliente = document.getElementById("excCliente").value.trim();
-      const cantidad = parseInt(document.getElementById("excCantidad").value);
-      if (!proveedor || !cliente || isNaN(cantidad)) return alert("⚠️ Completa todos los campos.");
-
-      await setDoc(doc(db, "excepciones", `${proveedor}-${cliente}`), { proveedor, cliente, camiones: cantidad });
-      alert(`🚚 Excepción guardada para ${proveedor}.`);
-      cargarExcepciones();
-    });
-
-    document.addEventListener("click", async e => {
-      if (e.target.classList.contains("btnEliminarExc")) {
-        await deleteDoc(doc(db, "excepciones", e.target.dataset.id));
-        cargarExcepciones();
-      }
-    });
-
-    // ======== BUSCAR EN EXCEPCIONES ========
-    document.getElementById("busquedaExcepcion").addEventListener("input", e => {
-      const val = e.target.value.toLowerCase();
-      document.querySelectorAll("#tabla-excepciones tbody tr").forEach(tr => {
-        tr.style.display = tr.textContent.toLowerCase().includes(val) ? "" : "none";
-      });
-    });
-
-    cargarExcepciones();
-  </script>
+  // Inicial
+  adminPanel.style.display = 'none';
+</script>
 </body>
 </html>
