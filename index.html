@@ -371,7 +371,7 @@
   btnGuardar.addEventListener('click', async () => {
     const proveedor = document.getElementById('proveedor').value.trim();
     const cliente   = norm(document.getElementById('cliente').value);
-    const cantidad  = parseInt(document.getElementById('cantidad').value);
+    const cantidad  = -parseInt(document.getElementById('cantidad').value);
     const tnActual  = document.getElementById('tn').value.trim() || '';
     const notasActual = document.getElementById('notasInput').value.trim() || '';
     const fecha     = document.getElementById('fechaInput').value;
@@ -392,7 +392,7 @@
 
     if (esExcepcion) {
       const nuevoGeneral = dispGeneral + cantidad;
-      if (nuevoGeneral < 0) { alert('No hay stock suficiente en el general'); return; }
+      if (nuevoGeneral < -9999) { alert('Limite Excedido'); return; }
       batch.set(genRef, {
         proveedor, proveedorNorm: norm(proveedor),
         fecha, puerto, puertoNorm: puerto,
@@ -825,3 +825,4 @@ document.getElementById('btnBorrarMasivo').addEventListener('click', async () =>
 </script>
 </body>
 </html>
+
