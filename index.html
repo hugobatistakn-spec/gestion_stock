@@ -367,64 +367,38 @@
   });
 
   // ---------- GUARDAR ----------
-  btnGuardar.addEventListener('click', async () => {
-    const proveedor = document.getElementById('proveedor').value.trim();
-    const cliente   = norm(document.getElementById('cliente').value);
-    const cantidad  = parseInt(document.getElementById('cantidad').value);
-    const tnActual  = document.getElementById('tn').value.trim() || '';
-    const notasActual = document.getElementById('notasInput').value.trim() || '';
-    const fecha     = document.getElementById('fechaInput').value;
-    const puerto    = norm(document.getElementById('puertoInput').value);
-    const localidad = norm(document.getElementById('localidadInput').value);
-    const usuario   = document.getElementById('usuarioInput').value.trim() || '';
+btnGuardar.addEventListener('click', async () => {
+  const proveedor = document.getElementById('proveedor').value.trim();
+  const cliente   = norm(document.getElementById('cliente').value);
+  const fecha     = document.getElementById('fechaInput').value;
+  const puerto    = norm(document.getElementById('puertoInput').value);
+  const localidad = norm(document.getElementById('localidadInput').value);
+  const usuario   = document.getElementById('usuarioInput').value.trim() || '';
+  const tnActual  = document.getElementById('tn').value.trim() || '';
+  const notasActual = document.getElementById('notasInput').value.trim() || '';
 
-    if (!proveedor || isNaN(cantidad) || !fecha) {
-      alert('Completa proveedor, cantidad y fecha'); return;
-    }
+  // ✅ 1. leemos la cantidad tal cual
+  const rawCant = parseInt(document.getElementById('cantidad').value);
+  if (isNaN(rawCant)) {
+    alert('Introduce una cantidad válida (positiva o negativa).');
+    return;
+  }
+  // ✅ 2. respetamos el signo que puso el usuario
+  const cantidad = rawCant;
 
-    const esExcepcion = !!(cliente && localidad);
-    const batch       = writeBatch(db);
-    const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
-    const genRef = doc(db, 'stockGeneral', genId);
-    const genSnap= await getDoc(genRef);
-    let dispGeneral = genSnap.exists() ? (genSnap.data().disponibilidad || 0) : 0;
+  if (!proveedor || !fecha) {
+    alert('Completa proveedor y fecha.');
+    return;
+  }
 
-    if (esExcepcion) {
-      const nuevoGeneral = dispGeneral + cantidad;
-      if (nuevoGeneral < -9999) { alert('Limite Excedido'); return; }
-      batch.set(genRef, {
-        proveedor, proveedorNorm: norm(proveedor),
-        fecha, puerto, puertoNorm: puerto,
-        disponibilidad: nuevoGeneral,
-        usuario: usuario || '', tn: ''
-      }, { merge: true });
+  const esExcepcion = !!(cliente && localidad);
+  const batch       = writeBatch(db);
+  const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
+  const genRef = doc(db, 'stockGeneral', genId);
+  const genSnap= await getDoc(genRef);
+  let dispGeneral = genSnap.exists() ? (genSnap.data().disponibilidad || 0) : 0;
 
-      const exId  = `${norm(proveedor)}::${fecha}::${puerto}::${cliente}::${localidad}`;
-      const exRef = doc(db, 'excepciones', exId);
-      const exSnap= await getDoc(exRef);
-      const asignadoAnterior = exSnap.exists() ? (exSnap.data().asignado || 0) : 0;
-      const nuevoAsignado    = asignadoAnterior + cantidad;
-      let tnAcum   = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
-      let notasAcum= exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
-      if (tnActual)   tnAcum += (tnAcum ? ' | ' : '') + `${tnActual}`;
-      if (notasActual) notasAcum += (notasAcum ? ' | ' : '') + `${notasActual}`;
-
-      batch.set(exRef, {
-        proveedor, proveedorNorm: norm(proveedor),
-        cliente,   clienteNorm:   cliente,
-        fecha,     puerto,        puertoNorm: puerto,
-        localidad, localidadNorm: localidad,
-        asignado: nuevoAsignado,
-        usuario: usuario || '',
-        tnAcum: tnAcum,
-        notasAcum: notasAcum
-      }, { merge: true });
-
-      await batch.commit();
-      alert('✅ Stock general y excepción actualizados.');
-      await buscarYMostrar(); return;
-    }
-
+  if (esExcepcion) {
     const nuevoGeneral = dispGeneral + cantidad;
     batch.set(genRef, {
       proveedor, proveedorNorm: norm(proveedor),
@@ -433,10 +407,45 @@
       usuario: usuario || '', tn: ''
     }, { merge: true });
 
+    const exId  = `${norm(proveedor)}::${fecha}::${puerto}::${cliente}::${localidad}`;
+    const exRef = doc(db, 'excepciones', exId);
+    const exSnap= await getDoc(exRef);
+    const asignadoAnterior = exSnap.exists() ? (exSnap.data().asignado || 0) : 0;
+    const nuevoAsignado    = asignadoAnterior + cantidad;
+    let tnAcum   = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
+    let notasAcum= exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
+    if (tnActual)   tnAcum += (tnAcum ? ' | ' : '') + `${tnActual}`;
+    if (notasActual) notasAcum += (notasAcum ? ' | ' : '') + `${notasActual}`;
+
+    batch.set(exRef, {
+      proveedor, proveedorNorm: norm(proveedor),
+      cliente,   clienteNorm:   cliente,
+      fecha,     puerto,        puertoNorm: puerto,
+      localidad, localidadNorm: localidad,
+      asignado: nuevoAsignado,
+      usuario: usuario || '',
+      tnAcum: tnAcum,
+      notasAcum: notasAcum
+    }, { merge: true });
+
     await batch.commit();
-    alert('✅ Stock general actualizado.');
+    alert('✅ Stock general y excepción actualizados.');
     await buscarYMostrar();
-  });
+    return;
+  }
+
+  const nuevoGeneral = dispGeneral + cantidad;
+  batch.set(genRef, {
+    proveedor, proveedorNorm: norm(proveedor),
+    fecha, puerto, puertoNorm: puerto,
+    disponibilidad: nuevoGeneral,
+    usuario: usuario || '', tn: ''
+  }, { merge: true });
+
+  await batch.commit();
+  alert('✅ Stock general actualizado.');
+  await buscarYMostrar();
+});
 
   // ---------- LIMPIAR ----------
   btnLimpiarPrincipal.addEventListener('click', () => {
@@ -824,6 +833,7 @@ document.getElementById('btnBorrarMasivo').addEventListener('click', async () =>
 </script>
 </body>
 </html>
+
 
 
 
