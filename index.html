@@ -94,6 +94,7 @@
       <input type="text" id="cliente" placeholder="Cliente (vacío = general)">
       <input type="number" id="cantidad" placeholder="-  suma  /  +  resta" style="width:150px">
       <input type="text" id="tn" placeholder="TN">
+      <input type="text" id="notasInput" placeholder="Notas">
       <input type="date" id="fechaInput">
       <input type="text" id="puertoInput" placeholder="Puerto">
       <input type="text" id="localidadInput" placeholder="Localidad">
@@ -325,7 +326,7 @@
     tr.innerHTML = `
       <td>${d.proveedor || ''}</td>
       <td>-</td>
-      <td>${Math.abs(d.disponibilidad ?? 0)}</td>
+      <td>${d.disponibilidad ?? 0}</td>
       <td>${d.puerto || ''}</td>
       <td>-</td>
       <td>${d.fecha || ''}</td>
@@ -341,7 +342,7 @@
     tr.innerHTML = `
       <td>${d.proveedor || ''} <span class="badge">Excepción</span></td>
       <td>${d.cliente || ''}</td>
-      <td>${Math.abs(d.asignado ?? 0)}</td>
+      <td>${d.asignado ?? 0}</td>
       <td>${d.puerto || ''}</td>
       <td>${d.localidad || ''}</td>
       <td>${d.fecha || ''}</td>
@@ -370,25 +371,21 @@
 btnGuardar.addEventListener('click', async () => {
   const proveedor = document.getElementById('proveedor').value.trim();
   const cliente   = norm(document.getElementById('cliente').value);
-  const fecha     = document.getElementById('fechaInput').value;
   const puerto    = norm(document.getElementById('puertoInput').value);
-  const localidad = norm(document.getElementById('localidadInput').value);
-  const usuario   = document.getElementById('usuarioInput').value.trim() || '';
+
+  // ➜➜➜  DEPURACIÓN: VERIFICAMOS ANTES DE INVERTIR
+  const rawCant = document.getElementById('cantidad').value;
+  console.log('Puerto:', puerto, 'Raw cantidad:', rawCant, 'Después de signo:', -parseInt(rawCant));
+
+  const cantidad  = -parseInt(rawCant);   // ← invierte el signo
   const tnActual  = document.getElementById('tn').value.trim() || '';
   const notasActual = document.getElementById('notasInput').value.trim() || '';
+  const fecha     = document.getElementById('fechaInput').value;
+  const localidad = norm(document.getElementById('localidadInput').value);
+  const usuario   = document.getElementById('usuarioInput').value.trim() || '';
 
-  // ✅ 1. leemos la cantidad tal cual
-  const rawCant = parseInt(document.getElementById('cantidad').value);
-  if (isNaN(rawCant)) {
-    alert('Introduce una cantidad válida (positiva o negativa).');
-    return;
-  }
-  // ✅ 2. respetamos el signo que puso el usuario
-  const cantidad = rawCant;
-
-  if (!proveedor || !fecha) {
-    alert('Completa proveedor y fecha.');
-    return;
+  if (!proveedor || isNaN(cantidad) || !fecha) {
+    alert('Completa proveedor, cantidad y fecha'); return;
   }
 
   const esExcepcion = !!(cliente && localidad);
@@ -400,6 +397,8 @@ btnGuardar.addEventListener('click', async () => {
 
   if (esExcepcion) {
     const nuevoGeneral = dispGeneral + cantidad;
+    // permitimos negativos sin límite bajo
+    if (nuevoGeneral < -999999) { alert('Límite de deuda excedido'); return; }
     batch.set(genRef, {
       proveedor, proveedorNorm: norm(proveedor),
       fecha, puerto, puertoNorm: puerto,
@@ -430,8 +429,7 @@ btnGuardar.addEventListener('click', async () => {
 
     await batch.commit();
     alert('✅ Stock general y excepción actualizados.');
-    await buscarYMostrar();
-    return;
+    await buscarYMostrar(); return;
   }
 
   const nuevoGeneral = dispGeneral + cantidad;
