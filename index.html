@@ -370,7 +370,7 @@
   btnGuardar.addEventListener('click', async () => {
     const proveedor = document.getElementById('proveedor').value.trim();
     const cliente   = norm(document.getElementById('cliente').value);
-    const cantidad  = -parseInt(document.getElementById('cantidad').value);
+    const cantidad  = parseInt(document.getElementById('cantidad').value);
     const tnActual  = document.getElementById('tn').value.trim() || '';
     const notasActual = document.getElementById('notasInput').value.trim() || '';
     const fecha     = document.getElementById('fechaInput').value;
@@ -824,5 +824,6 @@ document.getElementById('btnBorrarMasivo').addEventListener('click', async () =>
 </script>
 </body>
 </html>
+
 
 
