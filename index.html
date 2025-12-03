@@ -72,7 +72,8 @@
         <tr>
           <th>Proveedor</th>
           <th>Cliente</th>
-          <th>Disponibilidad</th>
+          <th>Acuerdo</th>
+          <th>Disponible</th>
           <th>Puerto</th>
           <th>Localidad</th>
           <th>Fecha</th>
@@ -94,7 +95,6 @@
       <input type="text" id="cliente" placeholder="Cliente (vacío = general)">
       <input type="number" id="cantidad" placeholder="-  suma  /  +  resta" style="width:150px">
       <input type="text" id="tn" placeholder="TN">
-      <input type="text" id="notasInput" placeholder="Notas">
       <input type="date" id="fechaInput">
       <input type="text" id="puertoInput" placeholder="Puerto">
       <input type="text" id="localidadInput" placeholder="Localidad">
@@ -264,69 +264,73 @@
     const clienteRaw= document.getElementById("filtroCliente").value.trim().toUpperCase();
     const localRaw  = document.getElementById("filtroLocalidad").value.trim().toUpperCase();
 
+    /* 1.  EXCEPCIONES  (cliente + localidad)  */
     if (clienteRaw && localRaw) {
       let qEx = collection(db, "excepciones");
       const constraintsEx = [];
-      if (fecha)  constraintsEx.push(where("fecha",  "==", fecha));
+      if (fecha)     constraintsEx.push(where("fecha",  "==", fecha));
       if (puertoRaw) constraintsEx.push(where("puerto", "==", puertoRaw));
-      if (clienteRaw) constraintsEx.push(where("cliente", "==", clienteRaw));
-      if (localRaw)  constraintsEx.push(where("localidad", "==", localRaw));
+      if (clienteRaw)constraintsEx.push(where("cliente","==",clienteRaw));
+      if (localRaw)  constraintsEx.push(where("localidad","==",localRaw));
       qEx = query(qEx, ...constraintsEx);
 
       const snapEx = await getDocs(qEx);
       let found = false;
-      snapEx.forEach(s => {
+      for (const s of snapEx.docs) {
         const d = s.data();
-        if ((d.puerto || '').toUpperCase().startsWith(puertoRaw) &&
-            (d.cliente || '').toUpperCase().startsWith(clienteRaw) &&
-            (d.localidad || '').toUpperCase().startsWith(localRaw)) {
+        if ((d.puerto||'').toUpperCase().startsWith(puertoRaw) &&
+            (d.cliente||'').toUpperCase().startsWith(clienteRaw) &&
+            (d.localidad||'').toUpperCase().startsWith(localRaw)) {
           found = true;
           pintarFilaExcepcion(d, s.id);
         }
-      });
+      }
       if (found) { disponibilidadCard.classList.remove('hidden'); return; }
-      let qGen = collection(db, "stockGeneral");
-      const constraintsGen = [];
-      if (fecha)  constraintsGen.push(where("fecha",  "==", fecha));
-      if (puertoRaw) constraintsGen.push(where("puerto", ">=", puertoRaw));
-      qGen = query(qGen, ...constraintsGen);
-      const snapGen = await getDocs(qGen);
-      let foundGen = false;
-      snapGen.forEach(s => {
-        const d = s.data();
-        if ((d.puerto || '').toUpperCase().startsWith(puertoRaw)) {
-          foundGen = true;
-          pintarFilaGeneral(d, s.id);
-        }
-      });
-      if (foundGen) { disponibilidadCard.classList.remove('hidden'); return; }
-      noResults.style.display = 'block'; return;
     }
 
+    /* 2.  STOCK GENERAL  */
     let qGen = collection(db, "stockGeneral");
     const constraintsGen = [];
-    if (fecha)  constraintsGen.push(where("fecha",  "==", fecha));
+    if (fecha)     constraintsGen.push(where("fecha", "==", fecha));
     if (puertoRaw) constraintsGen.push(where("puerto", "==", puertoRaw));
     qGen = query(qGen, ...constraintsGen);
+
     const snapGen = await getDocs(qGen);
     let found = false;
-    snapGen.forEach(s => {
+    for (const s of snapGen.docs) {
       const d = s.data();
-      if ((d.puerto || '').toUpperCase().startsWith(puertoRaw)) {
+      if ((d.puerto||'').toUpperCase().startsWith(puertoRaw)) {
         found = true;
-        pintarFilaGeneral(d, s.id);
+        await pintarFilaGeneral(d, s.id);
       }
-    });
+    }
+
     if (found) { disponibilidadCard.classList.remove('hidden'); return; }
     noResults.style.display = 'block';
   }
 
-  function pintarFilaGeneral(d, id) {
+  // ----------  AUXILIARES  ----------
+  async function cantidadUsada(prov, pt, fec) {
+    const q = query(collection(db, 'movimientos'),
+                    where('proveedor', '==', prov),
+                    where('puerto',    '==', pt),
+                    where('fecha',     '==', fec),
+                    where('delta',     '<',  0));
+    const snap = await getDocs(q);
+    let usado = 0;
+    snap.forEach(doc => { usado += Math.abs(doc.data().delta || 0); });
+    return usado;
+  }
+
+  async function pintarFilaGeneral(d, id) {
+    const consumido = await cantidadUsada(d.proveedor, d.puerto, d.fecha);
+    const saldo     = (d.disponibilidad ?? 0);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${d.proveedor || ''}</td>
       <td>-</td>
-      <td>${d.disponibilidad ?? 0}</td>
+      <td>${d.acuerdo ?? d.disponibilidad ?? 0}</td>
+      <td>${saldo}</td>
       <td>${d.puerto || ''}</td>
       <td>-</td>
       <td>${d.fecha || ''}</td>
@@ -342,6 +346,7 @@
     tr.innerHTML = `
       <td>${d.proveedor || ''} <span class="badge">Excepción</span></td>
       <td>${d.cliente || ''}</td>
+      <td>${d.asignadoFijo ?? d.asignado ?? 0}</td>
       <td>${d.asignado ?? 0}</td>
       <td>${d.puerto || ''}</td>
       <td>${d.localidad || ''}</td>
@@ -368,86 +373,95 @@
   });
 
   // ---------- GUARDAR ----------
-btnGuardar.addEventListener('click', async () => {
-  const proveedor = document.getElementById('proveedor').value.trim();
-  const cliente   = norm(document.getElementById('cliente').value);
-  const puerto    = norm(document.getElementById('puertoInput').value);
+  btnGuardar.addEventListener('click', async () => {
+    const proveedor = document.getElementById('proveedor').value.trim();
+    const cliente   = norm(document.getElementById('cliente').value);
+    let cantidadRaw = parseInt(document.getElementById('cantidad').value);
+    if (isNaN(cantidadRaw)) { alert('Cantidad inválida'); return; }
+    const cantidad  = -cantidadRaw;
+    const tnActual  = document.getElementById('tn').value.trim() || '';
+    const fecha     = document.getElementById('fechaInput').value;
+    const puerto    = norm(document.getElementById('puertoInput').value);
+    const localidad = norm(document.getElementById('localidadInput').value);
+    const usuario   = document.getElementById('usuarioInput').value.trim() || '';
 
-  // ➜➜➜  DEPURACIÓN: VERIFICAMOS ANTES DE INVERTIR
-  const rawCant = document.getElementById('cantidad').value;
-  console.log('Puerto:', puerto, 'Raw cantidad:', rawCant, 'Después de signo:', -parseInt(rawCant));
+    if (!proveedor || !fecha) { alert('Completa proveedor y fecha'); return; }
 
-  const cantidad  = -parseInt(rawCant);   // ← invierte el signo
-  const tnActual  = document.getElementById('tn').value.trim() || '';
-  const notasActual = document.getElementById('notasInput').value.trim() || '';
-  const fecha     = document.getElementById('fechaInput').value;
-  const localidad = norm(document.getElementById('localidadInput').value);
-  const usuario   = document.getElementById('usuarioInput').value.trim() || '';
+    const esExcepcion = !!(cliente && localidad);
+    const batch       = writeBatch(db);
+    const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
+    const genRef = doc(db, 'stockGeneral', genId);
+    const genSnap= await getDoc(genRef);
 
-  if (!proveedor || isNaN(cantidad) || !fecha) {
-    alert('Completa proveedor, cantidad y fecha'); return;
-  }
+    // ----------- STOCK GENERAL -----------
+    let dispActual   = genSnap.exists() ? (genSnap.data().disponibilidad ?? 0) : 0;
+    let acuerdoActual= genSnap.exists() ? (genSnap.data().acuerdo ?? dispActual) : 0;
+    const nuevoDisponible = dispActual + cantidad;
 
-  const esExcepcion = !!(cliente && localidad);
-  const batch       = writeBatch(db);
-  const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
-  const genRef = doc(db, 'stockGeneral', genId);
-  const genSnap= await getDoc(genRef);
-  let dispGeneral = genSnap.exists() ? (genSnap.data().disponibilidad || 0) : 0;
-
-  if (esExcepcion) {
-    const nuevoGeneral = dispGeneral + cantidad;
-    // permitimos negativos sin límite bajo
-    if (nuevoGeneral < -999999) { alert('Límite de deuda excedido'); return; }
     batch.set(genRef, {
       proveedor, proveedorNorm: norm(proveedor),
       fecha, puerto, puertoNorm: puerto,
-      disponibilidad: nuevoGeneral,
+      acuerdo: acuerdoActual,
+      disponibilidad: nuevoDisponible,
       usuario: usuario || '', tn: ''
     }, { merge: true });
 
-    const exId  = `${norm(proveedor)}::${fecha}::${puerto}::${cliente}::${localidad}`;
-    const exRef = doc(db, 'excepciones', exId);
-    const exSnap= await getDoc(exRef);
-    const asignadoAnterior = exSnap.exists() ? (exSnap.data().asignado || 0) : 0;
-    const nuevoAsignado    = asignadoAnterior + cantidad;
-    let tnAcum   = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
-    let notasAcum= exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
-    if (tnActual)   tnAcum += (tnAcum ? ' | ' : '') + `${tnActual}`;
-    if (notasActual) notasAcum += (notasAcum ? ' | ' : '') + `${notasActual}`;
+    // ----------- RESTAR TAMBIÉN EN EXCEPCIONES (si es reducción) ----------
+    if (cantidad < 0) {
+      const qEx = query(
+        collection(db, 'excepciones'),
+        where('proveedor', '==', proveedor),
+        where('fecha', '==', fecha),
+        where('puerto', '==', puerto)
+      );
+      const excepcionesSnap = await getDocs(qEx);
+      for (const exDoc of excepcionesSnap.docs) {
+        const exData = exDoc.data();
+        const nuevoAsignado = Math.max(0, (exData.asignado || 0) + cantidad); // cantidad es negativa
+        batch.set(exDoc.ref, { asignado: nuevoAsignado }, { merge: true });
+      }
+    }
 
-    batch.set(exRef, {
-      proveedor, proveedorNorm: norm(proveedor),
-      cliente,   clienteNorm:   cliente,
-      fecha,     puerto,        puertoNorm: puerto,
-      localidad, localidadNorm: localidad,
-      asignado: nuevoAsignado,
-      usuario: usuario || '',
-      tnAcum: tnAcum,
-      notasAcum: notasAcum
-    }, { merge: true });
+    // ----------- EXCEPCIÓN INDIVIDUAL (si aplica) -----------
+    if (esExcepcion) {
+      const exId  = `${norm(proveedor)}::${fecha}::${puerto}::${cliente}::${localidad}`;
+      const exRef = doc(db, 'excepciones', exId);
+      const exSnap= await getDoc(exRef);
+
+      let asigActual = exSnap.exists() ? (exSnap.data().asignado ?? 0) : 0;
+      let asigFijo   = exSnap.exists() ? (exSnap.data().asignadoFijo ?? asigActual) : 0;
+      const nuevoAsignado = asigActual + cantidad;
+
+      let tnAcum   = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
+      let notasAcum= exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
+      if (tnActual)   tnAcum += (tnAcum ? ' | ' : '') + `${tnActual}`;
+
+      batch.set(exRef, {
+        proveedor, proveedorNorm: norm(proveedor),
+        cliente,   clienteNorm:   cliente,
+        fecha,     puerto,        puertoNorm: puerto,
+        localidad, localidadNorm: localidad,
+        asignadoFijo: asigFijo,
+        asignado: nuevoAsignado,
+        usuario: usuario || '',
+        tnAcum: tnAcum,
+        notasAcum: notasAcum
+      }, { merge: true });
+
+      await batch.commit();
+      alert('✅ Stock general y excepción actualizados.');
+      await buscarYMostrar();
+      return;
+    }
 
     await batch.commit();
-    alert('✅ Stock general y excepción actualizados.');
-    await buscarYMostrar(); return;
-  }
-
-  const nuevoGeneral = dispGeneral + cantidad;
-  batch.set(genRef, {
-    proveedor, proveedorNorm: norm(proveedor),
-    fecha, puerto, puertoNorm: puerto,
-    disponibilidad: nuevoGeneral,
-    usuario: usuario || '', tn: ''
-  }, { merge: true });
-
-  await batch.commit();
-  alert('✅ Stock general actualizado.');
-  await buscarYMostrar();
-});
+    alert('✅ Stock general actualizado.');
+    await buscarYMostrar();
+  });
 
   // ---------- LIMPIAR ----------
   btnLimpiarPrincipal.addEventListener('click', () => {
-    document.querySelectorAll('#proveedor,#cliente,#cantidad,#tn,#notasInput,#fechaInput,#puertoInput,#localidadInput,#usuarioInput').forEach(i => i.value = '');
+    document.querySelectorAll('#proveedor,#cliente,#cantidad,#tn,#fechaInput,#puertoInput,#localidadInput,#usuarioInput').forEach(i => i.value = '');
   });
   btnLimpiarBusqueda.addEventListener('click', () => {
     document.querySelectorAll('#filtroFecha,#filtroPuerto,#filtroCliente,#filtroLocalidad').forEach(i => i.value = '');
@@ -459,9 +473,9 @@ btnGuardar.addEventListener('click', async () => {
   // ---------- EXPORTAR ----------
   exportCsvBtn.addEventListener('click', () => {
     const rows = [];
-    rows.push(['Proveedor', 'Cliente', 'Disponibilidad/Asignado', 'Puerto', 'Localidad', 'Fecha', 'Usuario', 'Notas']);
+    rows.push(['Proveedor', 'Cliente', 'Acuerdo', 'Disponible', 'Puerto', 'Localidad', 'Fecha', 'Usuario', 'Notas']);
     document.querySelectorAll('#tabla-stock tbody tr').forEach(tr => {
-      const cols = Array.from(tr.querySelectorAll('td')).slice(0, 8).map(td => td.textContent.trim());
+      const cols = Array.from(tr.querySelectorAll('td')).slice(0, 9).map(td => td.textContent.trim());
       if (cols.length) rows.push(cols);
     });
     downloadFile('disponibilidad.csv', csvFromArray(rows));
@@ -555,6 +569,7 @@ btnGuardar.addEventListener('click', async () => {
 
     const exSnap = await getDoc(exRef);
     let asignadoAnt = exSnap.exists() ? (exSnap.data().asignado || 0) : 0;
+    let asignadoFijo= exSnap.exists() ? (exSnap.data().asignadoFijo ?? asignadoAnt) : 0;
     let tnAcum   = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
     let notasAcum= exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
     if (tn)   tnAcum   += (tnAcum   ? ' | ' : '') + tn;
@@ -565,6 +580,7 @@ btnGuardar.addEventListener('click', async () => {
       cliente,   clienteNorm:   cliente,
       fecha,     puerto,        puertoNorm: puerto,
       localidad, localidadNorm: localidad,
+      asignadoFijo: asignadoFijo,
       asignado: asignadoAnt + asignado,
       usuario: usuario || '',
       tnAcum, notasAcum
@@ -572,67 +588,47 @@ btnGuardar.addEventListener('click', async () => {
 
     await batch.commit();
     alert(modifica ? '✅ Excepción creada y stock actualizado.' : '✅ Excepción creada sin tocar stock.');
-    // NO se limpia el formulario para que los campos queden tal cual
     await buscarYMostrar();
   });
 
-  btnAdmLimpiarEx.addEventListener('click', limpiaAdmEx);
-
-  function limpiaAdmEx() {
+  btnAdmLimpiarEx.addEventListener('click', () => {
     document.querySelectorAll('#admProveedor,#admCliente,#admPuerto,#admLocalidad,#admFecha,#admAsignado,#admTN,#admNotas,#admUsuario').forEach(i => i.value = '');
     document.getElementById('admModificaStock').checked = false;
-  }
+  });
 
-  // ---------- CARGA MASIVA EXCEPCIONES (solo excepciones, NO stockGeneral) ----------
+  // ---------- CARGA MASIVA EXCEPCIONES ----------
   document.getElementById('btnSubirCsvEx').addEventListener('click', async () => {
     const file = document.getElementById('csvExcepciones').files[0];
     if (!file) { alert('Selecciona un archivo CSV'); return; }
     const log = document.getElementById('csvLog');
     log.textContent = 'Procesando EXCEPCIONES...\n';
-
     const text = await file.text();
     const lines = text.split(/\r?\n/).filter(l => l.trim());
     const headers = lines.shift().split(',').map(h => h.trim().toLowerCase().replace(/\s+/g,''));
-
     const required = ['proveedor','cliente','puerto','localidad','fecha','asignado'];
     const missing = required.filter(h => !headers.includes(h));
     if (missing.length) { log.textContent = `❌ Faltan columnas: ${missing.join(', ')}`; return; }
-
-    let batch = writeBatch(db);
-    let ok = 0, err = 0;
-
+    let batch = writeBatch(db); let ok = 0, err = 0;
     for (const raw of lines) {
       const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
-      const row = {};
-      headers.forEach((h, i) => row[h] = cols[i] || '');
-
+      const row = {}; headers.forEach((h, i) => row[h] = cols[i] || '');
       const proveedor       = row.proveedor;
       const clienteOriginal = row.cliente.trim();
       const clienteNorm     = norm(clienteOriginal);
       const puerto          = norm(row.puerto);
       const localidadOriginal = row.localidad.trim();
       const localidadNorm     = norm(localidadOriginal);
-
       let fecha = row.fecha.trim().replace(/"/g, '');
-      if (fecha.includes('/')) {
-        const [d, m, a] = fecha.split('/');
-        fecha = `${a}-${m}-${d}`;
-      }
-
+      if (fecha.includes('/')) { const [d, m, a] = fecha.split('/'); fecha = `${a}-${m}-${d}`; }
       const asignado  = parseInt(row.asignado);
       const tn        = row.tn || '';
       const notas     = row.notas || '';
       const usuario   = row.usuario || '';
-
       if (!proveedor || !clienteOriginal || !localidadOriginal || !fecha || isNaN(asignado)) { err++; continue; }
-
-      // =====  ⬇️  NADA de stockGeneral  ⬇️  =====
       const exId   = `${norm(proveedor)}::${fecha}::${norm(puerto)}::${clienteNorm}::${localidadNorm}`;
       const exRef  = doc(db, 'excepciones', exId);
-
       const exSnap = await getDoc(exRef);
       const asignadoAnt = exSnap.exists() ? (exSnap.data().asignado || 0) : 0;
-
       if (document.getElementById('modoPrueba')?.checked) {
         console.log('ID excepción:', exId, 'datos:', {
           asignado: asignadoAnt + asignado,
@@ -640,12 +636,10 @@ btnGuardar.addEventListener('click', async () => {
         });
         ok++; continue;
       }
-
       let tnAcum    = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
       let notasAcum = exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
       if (tn)    tnAcum   += (tnAcum   ? ' | ' : '') + tn;
       if (notas) notasAcum += (notasAcum ? ' | ' : '') + notas;
-
       batch.set(exRef, {
         proveedor,
         cliente     : clienteOriginal,
@@ -655,19 +649,15 @@ btnGuardar.addEventListener('click', async () => {
         puertoNorm  : norm(puerto),
         localidad   : localidadOriginal,
         localidadNorm: localidadNorm,
+        asignadoFijo: asignadoAnt + asignado,
         asignado: asignadoAnt + asignado,
         usuario: usuario || '',
         tnAcum,
         notasAcum
       }, { merge: true });
-
       ok++;
-      if ((ok + err) % 450 === 0) {
-        await batch.commit();
-        batch = writeBatch(db);
-      }
+      if ((ok + err) % 450 === 0) { await batch.commit(); batch = writeBatch(db); }
     }
-
     if (!document.getElementById('modoPrueba')?.checked) {
       try { await batch.commit(); } catch (e) { log.textContent += 'Error final: ' + e.message; }
     }
@@ -675,29 +665,22 @@ btnGuardar.addEventListener('click', async () => {
     if (!document.getElementById('modoPrueba')?.checked) await buscarYMostrar();
   });
 
-  // ---------- CARGA MASIVA STOCK GENERAL (solo stock, NO excepciones) ----------
+  // ---------- CARGA MASIVA STOCK GENERAL ----------
   document.getElementById('btnSubirCsvStock').addEventListener('click', async () => {
-    const file = document.getElementById('csvExcepciones').files[0]; // re-usamos el input
+    const file = document.getElementById('csvExcepciones').files[0];
     if (!file) { alert('Selecciona un archivo CSV'); return; }
     const log = document.getElementById('csvLog');
     log.textContent = 'Procesando STOCK GENERAL...\n';
-
     const text = await file.text();
     const lines = text.split(/\r?\n/).filter(l => l.trim());
     const headers = lines.shift().split(',').map(h => h.trim().toLowerCase().replace(/\s+/g,''));
-
-    const required = ['proveedor','puerto','fecha','asignado']; // cliente & localidad opcionales
+    const required = ['proveedor','puerto','fecha','asignado'];
     const missing = required.filter(h => !headers.includes(h));
     if (missing.length) { log.textContent = `❌ Faltan columnas: ${missing.join(', ')}`; return; }
-
-    let batch = writeBatch(db);
-    let ok = 0, err = 0;
-
+    let batch = writeBatch(db); let ok = 0, err = 0;
     for (const raw of lines) {
       const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
-      const row = {};
-      headers.forEach((h, i) => row[h] = cols[i] || '');
-
+      const row = {}; headers.forEach((h, i) => row[h] = cols[i] || '');
       const proveedor = row.proveedor.trim();
       const puerto    = norm(row.puerto);
       let fecha = row.fecha.trim().replace(/"/g, '');
@@ -706,22 +689,16 @@ btnGuardar.addEventListener('click', async () => {
       const usuario = row.usuario || '';
       const tn = row.tn || '';
       const notas = row.notas || '';
-
-      // >>>  FILTRO  :  solo filas SIN cliente ni localidad  (stock general)  <<<
       if (!proveedor || !puerto || !fecha || isNaN(asignado) || row.cliente || row.localidad) { err++; continue; }
-
       const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
       const genRef = doc(db, 'stockGeneral', genId);
-
       const snap = await getDoc(genRef);
       const dispActual = snap.exists() ? (snap.data().disponibilidad || 0) : 0;
       const nuevaDisp  = dispActual + asignado;
-
       if (document.getElementById('modoPrueba')?.checked) {
         console.log('ID stock:', genId, 'delta:', asignado, 'nuevo:', nuevaDisp);
         ok++; continue;
       }
-
       batch.set(genRef, {
         proveedor,
         proveedorNorm: norm(proveedor),
@@ -732,11 +709,9 @@ btnGuardar.addEventListener('click', async () => {
         usuario,
         tn
       }, { merge: true });
-
       ok++;
       if ((ok + err) % 450 === 0) { await batch.commit(); batch = writeBatch(db); }
     }
-
     if (!document.getElementById('modoPrueba')?.checked) {
       try { await batch.commit(); } catch (e) { log.textContent += 'Error final: ' + e.message; }
     }
@@ -744,94 +719,72 @@ btnGuardar.addEventListener('click', async () => {
     if (!document.getElementById('modoPrueba')?.checked) await buscarYMostrar();
   });
 
-  // Inicial
-  adminPanel.style.display = 'none';
-// ---------- CORREGIR CUALQUIER CAMPO (incluye cantidad) ----------
-document.getElementById('btnCorregirEx').addEventListener('click', async () => {
-  const file = document.getElementById('csvCorregir').files[0];
-  if (!file) { alert('Selecciona el CSV de corrección'); return; }
-  const log = document.getElementById('corrLog');
-  log.textContent = 'Corrigiendo...\n';
-
-  const text = await file.text();
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  const headers = lines.shift().split(',').map(h => h.trim().toLowerCase());
-
-  // columnas obligatorias de identificación
-  const reqId = ['proveedor','puerto','fecha','cliente','localidadant','localidadnueva'];
-  const miss = reqId.filter(h => !headers.includes(h));
-  if (miss.length) { log.textContent = `❌ Faltan: ${miss.join(', ')}`; return; }
-
-  let ok = 0, err = 0;
-  for (const raw of lines) {
-    const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
-    if (cols.length < reqId.length) { err++; continue; }
-    const [prov, pt, fec, cli, locAnt, locNue] = cols.slice(0, 6);
-    const asignadoNuevo = cols[6] ? parseInt(cols[6]) : null; // ← puede estar vacío
-
-    if (!prov || !pt || !fec || !cli || !locAnt || !locNue) { err++; continue; }
-
-    const fecha = fec.includes('/') ? fec.split('/').reverse().join('-') : fec;
-    const exId = `${norm(prov)}::${fecha}::${norm(pt)}::${norm(cli)}::${norm(locAnt)}`;
-    const ref = doc(db, 'excepciones', exId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) { err++; continue; }
-
-    // campos que vamos a actualizar
-    const cambios = {
-      localidad: locNue.trim(),
-      localidadNorm: norm(locNue)
-    };
-    if (!isNaN(asignadoNuevo)) cambios.asignado = asignadoNuevo;
-
-    await setDoc(ref, cambios, { merge: true });
-    ok++;
-  }
-  log.textContent = `✅ ${ok} excepciones corregidas. ❌ ${err} errores.`;
-  await buscarYMostrar();
-});
-// ---------- BORRAR MASIVAMENTE ----------
-document.getElementById('btnBorrarMasivo').addEventListener('click', async () => {
-  const file = document.getElementById('csvBorrar').files[0];
-  if (!file) { alert('Selecciona el CSV a borrar'); return; }
-  if (!confirm('⚠️ Vas a BORRAR los documentos del CSV. ¿Continuar?')) return;
-  const log = document.getElementById('delLog');
-  log.textContent = 'Borrando...\n';
-
-  const text = await file.text();
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  const headers = lines.shift().split(',').map(h => h.trim().toLowerCase());
-
-  const req = ['proveedor','puerto','fecha','cliente','localidad'];
-  const miss = req.filter(h => !headers.includes(h));
-  if (miss.length) { log.textContent = `❌ Faltan: ${miss.join(', ')}`; return; }
-
-  let ok = 0, err = 0;
-  for (const raw of lines) {
-    const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
-    if (cols.length < req.length) { err++; continue; }
-    const [prov, pt, fec, cli, loc] = cols;
-    if (!prov || !pt || !fec || !cli || !loc) { err++; continue; }
-
-    const fecha = fec.includes('/') ? fec.split('/').reverse().join('-') : fec;
-    const exId = `${norm(prov)}::${fecha}::${norm(pt)}::${norm(cli)}::${norm(loc)}`;
-    try {
-      await deleteDoc(doc(db, 'excepciones', exId));
+  // ---------- CORREGIR / BORRAR MASIVO ----------
+  document.getElementById('btnCorregirEx').addEventListener('click', async () => {
+    const file = document.getElementById('csvCorregir').files[0];
+    if (!file) { alert('Selecciona el CSV de corrección'); return; }
+    const log = document.getElementById('corrLog');
+    log.textContent = 'Corrigiendo...\n';
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    const headers = lines.shift().split(',').map(h => h.trim().toLowerCase());
+    const reqId = ['proveedor','puerto','fecha','cliente','localidadant','localidadnueva'];
+    const miss = reqId.filter(h => !headers.includes(h));
+    if (miss.length) { log.textContent = `❌ Faltan: ${miss.join(', ')}`; return; }
+    let ok = 0, err = 0;
+    for (const raw of lines) {
+      const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
+      if (cols.length < reqId.length) { err++; continue; }
+      const [prov, pt, fec, cli, locAnt, locNue] = cols.slice(0, 6);
+      const asignadoNuevo = cols[6] ? parseInt(cols[6]) : null;
+      if (!prov || !pt || !fec || !cli || !locAnt || !locNue) { err++; continue; }
+      const fecha = fec.includes('/') ? fec.split('/').reverse().join('-') : fec;
+      const exId = `${norm(prov)}::${fecha}::${norm(pt)}::${norm(cli)}::${norm(locAnt)}`;
+      const ref = doc(db, 'excepciones', exId);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) { err++; continue; }
+      const cambios = { localidad: locNue.trim(), localidadNorm: norm(locNue) };
+      if (!isNaN(asignadoNuevo)) cambios.asignado = asignadoNuevo;
+      await setDoc(ref, cambios, { merge: true });
       ok++;
-    } catch (e) {
-      err++;
     }
-  }
-  log.textContent = `🗑️ ${ok} borrados. ❌ ${err} errores.`;
-  await buscarYMostrar();
-});
+    log.textContent = `✅ ${ok} excepciones corregidas. ❌ ${err} errores.`;
+    await buscarYMostrar();
+  });
+
+  document.getElementById('btnBorrarMasivo').addEventListener('click', async () => {
+    const file = document.getElementById('csvBorrar').files[0];
+    if (!file) { alert('Selecciona el CSV a borrar'); return; }
+    if (!confirm('⚠️ Vas a BORRAR los documentos del CSV. ¿Continuar?')) return;
+    const log = document.getElementById('delLog');
+    log.textContent = 'Borrando...\n';
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    const headers = lines.shift().split(',').map(h => h.trim().toLowerCase());
+    const req = ['proveedor','puerto','fecha','cliente','localidad'];
+    const miss = req.filter(h => !headers.includes(h));
+    if (miss.length) { log.textContent = `❌ Faltan: ${miss.join(', ')}`; return; }
+    let ok = 0, err = 0;
+    for (const raw of lines) {
+      const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
+      if (cols.length < req.length) { err++; continue; }
+      const [prov, pt, fec, cli, loc] = cols;
+      if (!prov || !pt || !fec || !cli || !loc) { err++; continue; }
+      const fecha = fec.includes('/') ? fec.split('/').reverse().join('-') : fec;
+      const exId = `${norm(prov)}::${fecha}::${norm(pt)}::${norm(cli)}::${norm(loc)}`;
+      try {
+        await deleteDoc(doc(db, 'excepciones', exId));
+        ok++;
+      } catch (e) {
+        err++;
+      }
+    }
+    log.textContent = `🗑️ ${ok} borrados. ❌ ${err} errores.`;
+    await buscarYMostrar();
+  });
 
   // Inicial
   adminPanel.style.display = 'none';
 </script>
 </body>
 </html>
-
-
-
-
