@@ -406,21 +406,40 @@
       usuario: usuario || '', tn: ''
     }, { merge: true });
 
-    // ----------- RESTAR TAMBIÉN EN EXCEPCIONES (si es reducción) ----------
+    // ---------- ACTUALIZAR TAMBIÉN EN EXCEPCIONES ----------
+{
+  // Normalizar claves para que coincidan con lo guardado en Firestore
+  const proveedorN = norm(proveedor);
+  const fechaN = norm(fecha);
+  const puertoN = norm(puerto);
+
+  const qEx = query(
+    collection(db, 'excepciones'),
+    where('proveedor', '==', proveedorN),
+    where('fecha', '==', fechaN),
+    where('puerto', '==', puertoN)
+  );
+
+  const excepcionesSnap = await getDocs(qEx);
+
+  // Si existen excepciones, actualizar cada una
+  for (const exDoc of excepcionesSnap.docs) {
+    const exData = exDoc.data();
+    const asignadoActual = exData.asignado || 0;
+
+    let nuevoAsignado;
+
     if (cantidad < 0) {
-      const qEx = query(
-        collection(db, 'excepciones'),
-        where('proveedor', '==', proveedor),
-        where('fecha', '==', fecha),
-        where('puerto', '==', puerto)
-      );
-      const excepcionesSnap = await getDocs(qEx);
-      for (const exDoc of excepcionesSnap.docs) {
-        const exData = exDoc.data();
-        const nuevoAsignado = Math.max(0, (exData.asignado || 0) + cantidad); // cantidad es negativa
-        batch.set(exDoc.ref, { asignado: nuevoAsignado }, { merge: true });
-      }
+      // 🔻 RESTA
+      nuevoAsignado = Math.max(0, asignadoActual + cantidad);
+    } else {
+      // 🔺 SUMA
+      nuevoAsignado = asignadoActual + cantidad;
     }
+
+    batch.set(exDoc.ref, { asignado: nuevoAsignado }, { merge: true });
+  }
+}
 
     // ----------- EXCEPCIÓN INDIVIDUAL (si aplica) -----------
     if (esExcepcion) {
@@ -788,3 +807,4 @@
 </script>
 </body>
 </html>
+
