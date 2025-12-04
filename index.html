@@ -114,8 +114,9 @@
       <button id="btnHistorial">Ver historial (movimientos)</button>
       <button id="btnExportAll">Exportar todo movimientos (CSV)</button>
       <button id="btnToggleMode" class="alt">Mostrar/Ocultar modo admin</button>
-<button id="btnFijarAcuerdosGeneral" class="alt">🔒 Fijar Acuerdos (stockGeneral)</button>
-<button id="btnFijarFijoExcepciones" class="alt">🔒 Fijar AsignadoFijo (excepciones)</button>
+      <button id="btnFijarAcuerdosGeneral" class="alt">🔒 Fijar Acuerdos (stockGeneral)</button>
+      <button id="btnFijarFijoExcepciones" class="alt">🔒 Fijar AsignadoFijo (excepciones)</button>
+      <button id="btnReescribirBD" class="alt">🔁 Reescribir BD con nueva estructura</button>
     </div>
     <div id="historial" style="margin-top:12px;display:none">
       <h4>Historial (últimos 200)</h4>
@@ -133,7 +134,8 @@
         <input type="text" id="admPuerto" placeholder="Puerto">
         <input type="text" id="admLocalidad" placeholder="Localidad">
         <input type="date" id="admFecha">
-        <input type="number" id="admAsignado" placeholder="Asignado" style="width:150px">
+        <input type="number" id="admAcuerdo" placeholder="Acuerdo (fijo)" style="width:150px">
+        <input type="number" id="admDisponibilidad" placeholder="Disponibilidad (variable)" style="width:150px">
         <input type="text" id="admTN" placeholder="TN">
         <input type="text" id="admNotas" placeholder="Notas">
         <input type="text" id="admUsuario" placeholder="Usuario">
@@ -150,13 +152,12 @@
     <!-- CARGA MASIVA CSV -->
     <div class="card" style="margin-top:1rem">
       <h4>📁 Carga masiva excepciones (CSV)</h4>
-      <label style="font-size:0.9rem">Columnas: proveedor,cliente,puerto,localidad,fecha,asignado,tn,notas,usuario</label>
+      <label style="font-size:0.9rem">Columnas: proveedor,cliente,puerto,localidad,fecha,acuerdo,disponibilidad,tn,notas,usuario</label>
       <input type="file" id="csvExcepciones" accept=".csv" style="margin-top:6px">
       <label style="display:flex;align-items:center;margin-top:8px">
         <input type="checkbox" id="modoPrueba" checked> 👀 Modo prueba (solo validar, no subir)
       </label>
       <button id="btnSubirCsvEx" class="alt">Subir CSV</button>
-      <!-- NUEVO BOTÓN STOCK GENERAL -->
       <button id="btnSubirCsvStock" class="alt" style="margin-left:8px">Subir CSV (solo stock general)</button>
       <pre id="csvLog" style="font-size:0.8rem;margin-top:8px;white-space:pre-wrap"></pre>
     </div>
@@ -165,7 +166,7 @@
 <div class="card" style="margin-top:1rem">
   <h4>🔧 Corregir excepciones (CSV)</h4>
   <label style="font-size:0.9rem">
-    Formato: proveedor,puerto,fecha,cliente,localidadAnt,localidadNueva,asignadoNuevo<br>
+    Formato: proveedor,puerto,fecha,cliente,localidadAnt,localidadNueva,acuerdoNuevo,disponibilidadNueva<br>
     (deja vacío lo que NO quieras tocar)
   </label>
   <input type="file" id="csvCorregir" accept=".csv" style="margin-top:6px">
@@ -176,7 +177,7 @@
 <!-- BORRAR MASIVO -->
 <div class="card" style="margin-top:1rem">
   <h4>🗑️ Borrar masivamente (CSV)</h4>
-  <label style="font-size:0.9rem">Formato: proveedor,puerto,fecha,cliente,localidad</label>
+  <label style="font-size:0.9rem">Formatato: proveedor,puerto,fecha,cliente,localidad</label>
   <input type="file" id="csvBorrar" accept=".csv" style="margin-top:6px">
   <button id="btnBorrarMasivo" class="alt" style="background:#dc3545">Borrar por CSV</button>
   <pre id="delLog" style="font-size:0.8rem;margin-top:8px;white-space:pre-wrap"></pre>
@@ -187,15 +188,13 @@
 <footer style="padding:12px;text-align:center;color:var(--muted)">Desarrollado por Hugo 🧠 | Firebase + Netlify</footer>
 
 <script type="module">
-
-  // 1. IMPORTS (siempre primero)
+  // 1. IMPORTS
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import {
     getFirestore, collection, getDocs, query, addDoc, doc, getDoc, setDoc, deleteDoc,
     orderBy, limit, where, writeBatch
   } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-  // 2. FIREBASE CONFIG
   const firebaseConfig = {
     apiKey: "AIzaSyC8qPpRUTOP5Ef7pf4DYXkTCZnTWVQwHHU",
     authDomain: "gestion-stock-transportes.firebaseapp.com",
@@ -207,7 +206,7 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 3. VARIABLES DOM
+  // 2. VARIABLES DOM
   const tablaBody       = document.querySelector("#tabla-stock tbody");
   const disponibilidadCard = document.getElementById("disponibilidadCard");
   const noResults       = document.getElementById("noResults");
@@ -225,7 +224,7 @@
   const btnExportAll    = document.getElementById("btnExportAll");
   const darkToggle      = document.getElementById("darkToggle");
 
-  // 4. TEMA
+  // 3. TEMA
   function applyTheme(theme) {
     if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
     else document.documentElement.removeAttribute('data-theme');
@@ -237,7 +236,7 @@
   });
   applyTheme(localStorage.getItem('theme') || 'light');
 
-  // 5. UTILS
+  // 4. UTILS
   function csvFromArray(rows) {
     return rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
   }
@@ -252,7 +251,7 @@
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim().replace(/[^A-Z0-9\/\+_]/g, '');
   }
 
-  // 6. FUNCIONES PRINCIPALES
+  // 5. FUNCIONES PRINCIPALES
   async function buscarYMostrar() {
     tablaBody.innerHTML = "";
     noResults.style.display = 'none';
@@ -328,23 +327,25 @@
   }
 
   function pintarFilaExcepcion(d, id) {
-    const tr = document.createElement('tr');
-    tr.classList.add('excepcion-row');
-    tr.innerHTML = `
-      <td>${d.proveedor || ''} <span class="badge">Excepción</span></td>
-      <td>${d.cliente || ''}</td>
-      <td>${d.asignadoFijo ?? d.asignado ?? 0}</td>
-      <td>${d.asignado ?? 0}</td>
-      <td>${d.puerto || ''}</td>
-      <td>${d.localidad || ''}</td>
-      <td>${d.fecha || ''}</td>
-      <td>${d.usuario || ''}</td>
-      <td>${d.notasAcum || ''}</td>
-      <td class="actions"><button class="btnEliminarExcepcion" data-id="${id}" style="background:#dc3545">❌</button></td>`;
-    tablaBody.appendChild(tr);
-  }
+  const tr = document.createElement('tr');
+  tr.classList.add('excepcion-row');  // ✅ aquí va "tr"
+  const acuerdo = d.acuerdo ?? d.asignadoFijo ?? d.asignado ?? 0;
+  const disp  = d.disponibilidad ?? d.asignado ?? 0;
+  tr.innerHTML = `
+    <td>${d.proveedor || ''} <span class="badge">Excepción</span></td>
+    <td>${d.cliente || ''}</td>
+    <td>${acuerdo}</td>
+    <td>${disp}</td>
+    <td>${d.puerto || ''}</td>
+    <td>${d.localidad || ''}</td>
+    <td>${d.fecha || ''}</td>
+    <td>${d.usuario || ''}</td>
+    <td>${d.notasAcum || ''}</td>
+    <td class="actions"><button class="btnEliminarExcepcion" data-id="${id}" style="background:#dc3545">❌</button></td>`;
+  tablaBody.appendChild(tr);
+}
 
-  // 7. EVENTOS
+  // 6. EVENTOS
   btnBuscar.addEventListener('click', buscarYMostrar);
   document.addEventListener('click', async (e) => {
     if (e.target.classList.contains('btnEliminarGeneral')) {
@@ -363,7 +364,7 @@
   btnGuardar.addEventListener('click', async () => {
     try {
       console.log('🔘 Click en Guardar');
-      const proveedor = document.getElementById('proveedor').value.trim();
+      const proveedor = norm(document.getElementById('proveedor').value.trim());
       const cliente   = norm(document.getElementById('cliente').value);
       let cantidadRaw = parseInt(document.getElementById('cantidad').value);
       console.log('🔍 cantidadRaw introducido', cantidadRaw);
@@ -398,27 +399,33 @@
         const excepcionesSnap = await getDocs(qEx);
         for (const exDoc of excepcionesSnap.docs) {
           const exData = exDoc.data();
-          const nuevoAsignado = Math.max(0, (exData.asignado || 0) + cantidad);
-          batch.set(exDoc.ref, { asignado: nuevoAsignado }, { merge: true });
+          const nuevoDisponibleEx = Math.max(0, (exData.disponibilidad || 0) + cantidad);
+          batch.set(exDoc.ref, { disponibilidad: nuevoDisponibleEx }, { merge: true });
         }
       }
       if (cantidad > 0) {
-        const qEx = query(collection(db, 'excepciones'), where('proveedor', '==', proveedor), where('fecha', '==', fecha), where('puerto', '==', puerto));
-        const excepcionesSnap = await getDocs(qEx);
-        for (const exDoc of excepcionesSnap.docs) {
-          const exData = exDoc.data();
-          const nuevoAsignado = (exData.asignado || 0) + cantidad;
-          console.log('➕ Sumando excepción', exDoc.id, 'ant:', exData.asignado, 'nuevo:', nuevoAsignado);
-          batch.set(exDoc.ref, { asignado: nuevoAsignado }, { merge: true });
-        }
+        const qEx = query(
+  collection(db, 'excepciones'),
+  where('proveedor', '==', proveedor),
+  where('fecha', '==', fecha),
+  where('puerto', '==', puerto)
+);
+const excepcionesSnap = await getDocs(qEx);
+for (const exDoc of excepcionesSnap.docs) {
+  const exData = exDoc.data();
+  const nuevoDisponibleEx = cantidad < 0
+    ? Math.max(0, (exData.disponibilidad ?? exData.asignado ?? 0) + cantidad)
+    : (exData.disponibilidad ?? exData.asignado ?? 0) + cantidad;
+  batch.set(exDoc.ref, { disponibilidad: nuevoDisponibleEx }, { merge: true });
+}
       }
       if (esExcepcion) {
         const exId  = `${norm(proveedor)}::${fecha}::${puerto}::${cliente}::${localidad}`;
         const exRef = doc(db, 'excepciones', exId);
         const exSnap= await getDoc(exRef);
-        let asigActual = exSnap.exists() ? (exSnap.data().asignado ?? 0) : 0;
-        let asigFijo   = exSnap.exists() ? (exSnap.data().asignadoFijo ?? asigActual) : 0;
-        const nuevoAsignado = asigActual + cantidad;
+        let dispActualEx = exSnap.exists() ? (exSnap.data().disponibilidad ?? 0) : 0;
+        let acuerdoEx    = exSnap.exists() ? (exSnap.data().acuerdo ?? dispActualEx) : 0;
+        const nuevoDisponibleEx = dispActualEx + cantidad;
         let tnAcum   = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
         let notasAcum= exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
         if (tnActual)   tnAcum += (tnAcum ? ' | ' : '') + `${tnActual}`;
@@ -427,8 +434,8 @@
           cliente,   clienteNorm:   cliente,
           fecha,     puerto,        puertoNorm: puerto,
           localidad, localidadNorm: localidad,
-          asignadoFijo: asigFijo,
-          asignado: nuevoAsignado,
+          acuerdo: acuerdoEx,
+          disponibilidad: nuevoDisponibleEx,
           usuario: usuario || '',
           tnAcum: tnAcum,
           notasAcum: notasAcum
@@ -449,7 +456,7 @@
     }
   });
 
-  // 8. MÁS EVENTOS
+  // 7. MÁS EVENTOS
   btnLimpiarPrincipal.addEventListener('click', () => {
     document.querySelectorAll('#proveedor,#cliente,#cantidad,#tn,#fechaInput,#puertoInput,#localidadInput,#usuarioInput').forEach(i => i.value = '');
   });
@@ -480,7 +487,7 @@
     alert('🗑️ Filas visibles eliminadas.');
   });
 
-  // 9. ADMIN
+  // 8. ADMIN
   adminBtn.addEventListener('click', async () => {
     const pw = prompt('Introduce contraseña admin:');
     if (pw === 'admin123') {
@@ -490,82 +497,115 @@
     }
   });
 
-  // ---------- FIJAR ACUERDOS EN TODOS LOS stockGeneral ----------
-document.getElementById('btnFijarAcuerdosGeneral').addEventListener('click', async () => {
-  if (!confirm('¿Fijar campo "acuerdo" al valor actual de "disponibilidad" en TODOS los stockGeneral?')) return;
+  // 9. BOTONES NUEVOS (fijar campos)
+  document.getElementById('btnFijarAcuerdosGeneral').addEventListener('click', async () => {
+    if (!confirm('¿Fijar campo "acuerdo" al valor actual de "disponibilidad" en TODOS los stockGeneral?')) return;
+    console.log('🔒 Fijando acuerdos en stockGeneral...');
+    const snap = await getDocs(collection(db, 'stockGeneral'));
+    let ok = 0, err = 0;
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+      const disp = data.disponibilidad ?? 0;
+      const tieneAcuerdo = data.acuerdo !== undefined;
+      if (!tieneAcuerdo) {
+        try {
+          await setDoc(docSnap.ref, { acuerdo: disp }, { merge: true });
+          console.log('✅ stockGeneral', docSnap.id, 'acuerdo =', disp);
+          ok++;
+        } catch (e) {
+          console.warn('❌ Error stockGeneral', docSnap.id, e);
+          err++;
+        }
+      } else {
+        console.log('⏭️ stockGeneral ya tiene acuerdo', docSnap.id);
+      }
+    }
+    alert(`stockGeneral fijados: ${ok}. Errores: ${err}`);
+  });
 
-  console.log('🔒 Fijando acuerdos en stockGeneral...');
-  const snap = await getDocs(collection(db, 'stockGeneral'));
-  let ok = 0, err = 0;
+  document.getElementById('btnFijarFijoExcepciones').addEventListener('click', async () => {
+    if (!confirm('¿Fijar campo "asignadoFijo" al valor actual de "asignado" en TODAS las excepciones?')) return;
+    console.log('🔒 Fijando asignadoFijo en excepciones...');
+    const snap = await getDocs(collection(db, 'excepciones'));
+    let ok = 0, err = 0;
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+      const asig = data.asignado ?? 0;
+      const tieneFijo = data.asignadoFijo !== undefined;
+      if (!tieneFijo) {
+        try {
+          await setDoc(docSnap.ref, { asignadoFijo: asig }, { merge: true });
+          console.log('✅ excepción', docSnap.id, 'asignadoFijo =', asig);
+          ok++;
+        } catch (e) {
+          console.warn('❌ Error excepción', docSnap.id, e);
+          err++;
+        }
+      } else {
+        console.log('⏭️ excepción ya tiene asignadoFijo', docSnap.id);
+      }
+    }
+    alert(`Excepciones fijadas: ${ok}. Errores: ${err}`);
+  });
 
-  for (const docSnap of snap.docs) {
-    const data = docSnap.data();
-    const disp = data.disponibilidad ?? 0;
-    const tieneAcuerdo = data.acuerdo !== undefined;
+  // 10. MIGRACIÓN: REESCRIBIR EXCEPCIONES CON NUEVA ESTRUCTURA
+  document.getElementById('btnReescribirBD').addEventListener('click', async () => {
+    if (!confirm('⚠️ ESTO REESCRIBIRÁ TODAS LAS EXCEPCIONES CON LA NUEVA ESTRUCTURA (Acuerdo + Disponibilidad).\n\nSe mantendrán los valores anteriores como "Acuerdo fijo" y se copiarán como "Disponibilidad inicial".\n\n¿Continuar?')) return;
 
-    if (!tieneAcuerdo) {
+    console.log('🔁 Iniciando reescritura de excepciones...');
+    const snap = await getDocs(collection(db, 'excepciones'));
+    let ok = 0, err = 0;
+
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+      const acuerdo = data.acuerdo ?? data.asignadoFijo ?? data.asignado ?? 0;
+      const disp  = data.disponibilidad ?? data.asignado ?? 0;
+
       try {
-        await setDoc(docSnap.ref, { acuerdo: disp }, { merge: true });
-        console.log('✅ stockGeneral', docSnap.id, 'acuerdo =', disp);
+        await setDoc(docSnap.ref, {
+          acuerdo: acuerdo,
+          disponibilidad: disp,
+          // mantener el resto
+          proveedor: data.proveedor,
+          cliente: data.cliente,
+          fecha: data.fecha,
+          puerto: data.puerto,
+          localidad: data.localidad,
+          usuario: data.usuario || '',
+          tnAcum: data.tnAcum || '',
+          notasAcum: data.notasAcum || ''
+        }, { merge: true });
+        console.log('✅ Reescrita excepción', docSnap.id);
         ok++;
       } catch (e) {
-        console.warn('❌ Error stockGeneral', docSnap.id, e);
+        console.warn('❌ Error reescribiendo', docSnap.id, e);
         err++;
       }
-    } else {
-      console.log('⏭️ stockGeneral ya tiene acuerdo', docSnap.id);
     }
-  }
-  alert(`stockGeneral fijados: ${ok}. Errores: ${err}`);
-});
 
-// ---------- FIJAR asignadoFijo EN TODOS LAS EXCEPCIONES ----------
-document.getElementById('btnFijarFijoExcepciones').addEventListener('click', async () => {
-  if (!confirm('¿Fijar campo "asignadoFijo" al valor actual de "asignado" en TODAS las excepciones?')) return;
-
-  console.log('🔒 Fijando asignadoFijo en excepciones...');
-  const snap = await getDocs(collection(db, 'excepciones'));
-  let ok = 0, err = 0;
-
-  for (const docSnap of snap.docs) {
-    const data = docSnap.data();
-    const asig = data.asignado ?? 0;
-    const tieneFijo = data.asignadoFijo !== undefined;
-
-    if (!tieneFijo) {
-      try {
-        await setDoc(docSnap.ref, { asignadoFijo: asig }, { merge: true });
-        console.log('✅ excepción', docSnap.id, 'asignadoFijo =', asig);
-        ok++;
-      } catch (e) {
-        console.warn('❌ Error excepción', docSnap.id, e);
-        err++;
-      }
-    } else {
-      console.log('⏭️ excepción ya tiene asignadoFijo', docSnap.id);
-    }
-  }
-  alert(`Excepciones fijadas: ${ok}. Errores: ${err}`);
-});
+    alert(`✅ Reescritura finalizada.\nExcepciones actualizadas: ${ok}.\nErrores: ${err}.\n\nAhora puedes sumar/restar sin tocar "Acuerdo".`);
+    await buscarYMostrar();
+  });
 
   // ---------- FORMULARIO ADMIN DE EXCEPCIÓN ----------
   const btnAdmGuardarEx = document.getElementById('btnAdmGuardarEx');
   const btnAdmLimpiarEx = document.getElementById('btnAdmLimpiarEx');
 
   btnAdmGuardarEx.addEventListener('click', async () => {
-    const proveedor = document.getElementById('admProveedor').value.trim();
+    const proveedor = norm(document.getElementById('proveedor').value.trim());
     const cliente   = norm(document.getElementById('admCliente').value);
     const puerto    = norm(document.getElementById('admPuerto').value);
     const localidad = norm(document.getElementById('admLocalidad').value);
     const fecha     = document.getElementById('admFecha').value;
-    const asignado  = parseInt(document.getElementById('admAsignado').value);
+    const acuerdo   = parseInt(document.getElementById('admAcuerdo').value);
+    const disp      = parseInt(document.getElementById('admDisponibilidad').value);
     const tn        = document.getElementById('admTN').value.trim() || '';
     const notas     = document.getElementById('admNotas').value.trim() || '';
     const usuario   = document.getElementById('admUsuario').value.trim() || '';
     const modifica  = document.getElementById('admModificaStock').checked;
 
-    if (!proveedor || !cliente || !localidad || !fecha || isNaN(asignado)) {
-      alert('Completa proveedor, cliente, localidad, fecha y asignado'); return;
+    if (!proveedor || !cliente || !localidad || !fecha || isNaN(acuerdo) || isNaN(disp)) {
+      alert('Completa proveedor, cliente, localidad, fecha, acuerdo y disponibilidad'); return;
     }
 
     const batch = writeBatch(db);
@@ -577,7 +617,7 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
     if (modifica) {
       const genSnap = await getDoc(genRef);
       let dispGeneral = genSnap.exists() ? (genSnap.data().disponibilidad || 0) : 0;
-      const nuevoGeneral = dispGeneral + asignado;
+      const nuevoGeneral = dispGeneral + disp;
       if (nuevoGeneral < 0) { alert('Stock insuficiente'); return; }
       batch.set(genRef, {
         proveedor, proveedorNorm: norm(proveedor),
@@ -588,8 +628,6 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
     }
 
     const exSnap = await getDoc(exRef);
-    let asignadoAnt = exSnap.exists() ? (exSnap.data().asignado || 0) : 0;
-    let asignadoFijo= exSnap.exists() ? (exSnap.data().asignadoFijo ?? asignadoAnt) : 0;
     let tnAcum   = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
     let notasAcum= exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
     if (tn)   tnAcum   += (tnAcum   ? ' | ' : '') + tn;
@@ -600,8 +638,8 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
       cliente,   clienteNorm:   cliente,
       fecha,     puerto,        puertoNorm: puerto,
       localidad, localidadNorm: localidad,
-      asignadoFijo: asignadoFijo,
-      asignado: asignadoAnt + asignado,
+      acuerdo: acuerdo,
+      disponibilidad: disp,
       usuario: usuario || '',
       tnAcum, notasAcum
     }, { merge: true });
@@ -612,11 +650,11 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
   });
 
   btnAdmLimpiarEx.addEventListener('click', () => {
-    document.querySelectorAll('#admProveedor,#admCliente,#admPuerto,#admLocalidad,#admFecha,#admAsignado,#admTN,#admNotas,#admUsuario').forEach(i => i.value = '');
+    document.querySelectorAll('#admProveedor,#admCliente,#admPuerto,#admLocalidad,#admFecha,#admAcuerdo,#admDisponibilidad,#admTN,#admNotas,#admUsuario').forEach(i => i.value = '');
     document.getElementById('admModificaStock').checked = false;
   });
 
-  // ---------- CARGA MASIVA EXCEPCIONES ----------
+  // ---------- CARGA MASIVA EXCEPCIONES (CSV) ----------
   document.getElementById('btnSubirCsvEx').addEventListener('click', async () => {
     const file = document.getElementById('csvExcepciones').files[0];
     if (!file) { alert('Selecciona un archivo CSV'); return; }
@@ -625,7 +663,7 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
     const text = await file.text();
     const lines = text.split(/\r?\n/).filter(l => l.trim());
     const headers = lines.shift().split(',').map(h => h.trim().toLowerCase().replace(/\s+/g,''));
-    const required = ['proveedor','cliente','puerto','localidad','fecha','asignado'];
+    const required = ['proveedor','cliente','puerto','localidad','fecha','acuerdo','disponibilidad'];
     const missing = required.filter(h => !headers.includes(h));
     if (missing.length) { log.textContent = `❌ Faltan columnas: ${missing.join(', ')}`; return; }
     let batch = writeBatch(db); let ok = 0, err = 0;
@@ -640,26 +678,21 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
       const localidadNorm     = norm(localidadOriginal);
       let fecha = row.fecha.trim().replace(/"/g, '');
       if (fecha.includes('/')) { const [d, m, a] = fecha.split('/'); fecha = `${a}-${m}-${d}`; }
-      const asignado  = parseInt(row.asignado);
+      const acuerdo = parseInt(row.acuerdo);
+      const disp    = parseInt(row.disponibilidad);
       const tn        = row.tn || '';
       const notas     = row.notas || '';
       const usuario   = row.usuario || '';
-      if (!proveedor || !clienteOriginal || !localidadOriginal || !fecha || isNaN(asignado)) { err++; continue; }
+      if (!proveedor || !clienteOriginal || !localidadOriginal || !fecha || isNaN(acuerdo) || isNaN(disp)) { err++; continue; }
       const exId   = `${norm(proveedor)}::${fecha}::${norm(puerto)}::${clienteNorm}::${localidadNorm}`;
       const exRef  = doc(db, 'excepciones', exId);
-      const exSnap = await getDoc(exRef);
-      const asignadoAnt = exSnap.exists() ? (exSnap.data().asignado || 0) : 0;
       if (document.getElementById('modoPrueba')?.checked) {
-        console.log('ID excepción:', exId, 'datos:', {
-          asignado: asignadoAnt + asignado,
-          fecha, cliente: clienteOriginal, puerto, localidad: localidadOriginal, proveedor
-        });
+        console.log('ID excepción:', exId, 'datos:', { acuerdo, disponibilidad: disp, fecha, cliente: clienteOriginal, puerto, localidad: localidadOriginal, proveedor });
         ok++; continue;
       }
-      let tnAcum    = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
-      let notasAcum = exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
-      if (tn)    tnAcum   += (tnAcum   ? ' | ' : '') + tn;
-      if (notas) notasAcum += (notasAcum ? ' | ' : '') + notas;
+      let tnAcum   = '', notasAcum = '';
+      if (tn)   tnAcum   += tn;
+      if (notas) notasAcum += notas;
       batch.set(exRef, {
         proveedor,
         cliente     : clienteOriginal,
@@ -669,11 +702,10 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
         puertoNorm  : norm(puerto),
         localidad   : localidadOriginal,
         localidadNorm: localidadNorm,
-        asignadoFijo: asignadoAnt + asignado,
-        asignado: asignadoAnt + asignado,
+        acuerdo: acuerdo,
+        disponibilidad: disp,
         usuario: usuario || '',
-        tnAcum,
-        notasAcum
+        tnAcum, notasAcum
       }, { merge: true });
       ok++;
       if ((ok + err) % 450 === 0) { await batch.commit(); batch = writeBatch(db); }
@@ -694,7 +726,7 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
     const text = await file.text();
     const lines = text.split(/\r?\n/).filter(l => l.trim());
     const headers = lines.shift().split(',').map(h => h.trim().toLowerCase().replace(/\s+/g,''));
-    const required = ['proveedor','puerto','fecha','asignado'];
+    const required = ['proveedor','puerto','fecha','disponibilidad'];
     const missing = required.filter(h => !headers.includes(h));
     if (missing.length) { log.textContent = `❌ Faltan columnas: ${missing.join(', ')}`; return; }
     let batch = writeBatch(db); let ok = 0, err = 0;
@@ -705,18 +737,18 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
       const puerto    = norm(row.puerto);
       let fecha = row.fecha.trim().replace(/"/g, '');
       if (fecha.includes('/')) { const [d, m, a] = fecha.split('/'); fecha = `${a}-${m}-${d}`; }
-      const asignado = parseInt(row.asignado);
+      const disp = parseInt(row.disponibilidad);
       const usuario = row.usuario || '';
       const tn = row.tn || '';
       const notas = row.notas || '';
-      if (!proveedor || !puerto || !fecha || isNaN(asignado) || row.cliente || row.localidad) { err++; continue; }
+      if (!proveedor || !puerto || !fecha || isNaN(disp) || row.cliente || row.localidad) { err++; continue; }
       const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
       const genRef = doc(db, 'stockGeneral', genId);
       const snap = await getDoc(genRef);
       const dispActual = snap.exists() ? (snap.data().disponibilidad || 0) : 0;
-      const nuevaDisp  = dispActual + asignado;
+      const nuevaDisp  = dispActual + disp;
       if (document.getElementById('modoPrueba')?.checked) {
-        console.log('ID stock:', genId, 'delta:', asignado, 'nuevo:', nuevaDisp);
+        console.log('ID stock:', genId, 'delta:', disp, 'nuevo:', nuevaDisp);
         ok++; continue;
       }
       batch.set(genRef, {
@@ -756,7 +788,8 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
       const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
       if (cols.length < reqId.length) { err++; continue; }
       const [prov, pt, fec, cli, locAnt, locNue] = cols.slice(0, 6);
-      const asignadoNuevo = cols[6] ? parseInt(cols[6]) : null;
+      const acuerdoNuevo = cols[6] ? parseInt(cols[6]) : null;
+      const dispNueva    = cols[7] ? parseInt(cols[7]) : null;
       if (!prov || !pt || !fec || !cli || !locAnt || !locNue) { err++; continue; }
       const fecha = fec.includes('/') ? fec.split('/').reverse().join('-') : fec;
       const exId = `${norm(prov)}::${fecha}::${norm(pt)}::${norm(cli)}::${norm(locAnt)}`;
@@ -764,7 +797,8 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
       const snap = await getDoc(ref);
       if (!snap.exists()) { err++; continue; }
       const cambios = { localidad: locNue.trim(), localidadNorm: norm(locNue) };
-      if (!isNaN(asignadoNuevo)) cambios.asignado = asignadoNuevo;
+      if (!isNaN(acuerdoNuevo)) cambios.acuerdo = acuerdoNuevo;
+      if (!isNaN(dispNueva))    cambios.disponibilidad = dispNueva;
       await setDoc(ref, cambios, { merge: true });
       ok++;
     }
@@ -802,6 +836,10 @@ document.getElementById('btnFijarFijoExcepciones').addEventListener('click', asy
     log.textContent = `🗑️ ${ok} borrados. ❌ ${err} errores.`;
     await buscarYMostrar();
   });
+
+console.log('norm("avanza") =', norm("avanza"));
+console.log('norm("AVANZA") =', norm("AVANZA"));
+console.log('norm(" Avanza ") =', norm(" Avanza "));
 
   // Inicial
   adminPanel.style.display = 'none';
