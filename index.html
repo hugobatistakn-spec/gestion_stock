@@ -8,6 +8,12 @@
   <style>
     :root{ --bg:#f3f6fc; --card:#fff; --primary:#007bff; --text:#222; --muted:#888; }
     [data-theme="dark"]{ --bg:#0f1724; --card:#0b1220; --primary:#60a5fa; --text:#e6eef8; --muted:#9aa7bf; }
+    th:nth-child(4), td:nth-child(4) {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #0a5c36;
+      background-color: #d4f8e0;
+    }
     *{box-sizing:border-box} body{font-family:Inter,system-ui; background:var(--bg); color:var(--text); margin:0}
     header{background:var(--primary); color:#fff; padding:1rem 1.25rem; display:flex;align-items:center;justify-content:space-between}
     header h1{margin:0;font-size:1.1rem}
@@ -48,14 +54,12 @@
     <div style="display:flex;flex-wrap:wrap;align-items:center">
       <input type="date" id="filtroFecha">
       <input type="text" id="filtroPuerto" placeholder="Puerto">
-      <input type="text" id="filtroCliente" placeholder="Cliente">
-      <input type="text" id="filtroLocalidad" placeholder="Localidad">
       <div style="margin-left:auto">
         <button id="btnBuscar">Buscar</button>
         <button id="btnLimpiarBusqueda" class="alt">🧹 Limpiar</button>
       </div>
     </div>
-    <div class="small hint">Cliente+Localidad → excepción; Fecha+Puerto → stock general</div>
+    <div class="small hint">Fecha+Puerto → stock general</div>
   </div>
 
   <!-- RESULTADOS -->
@@ -92,12 +96,9 @@
     <h3>🚛 Gestionar Reserva 🚛</h3>
     <div style="display:flex;flex-wrap:wrap;align-items:center">
       <input type="text" id="proveedor" placeholder="Proveedor">
-      <input type="text" id="cliente" placeholder="Cliente (vacío = general)">
       <input type="number" id="cantidad" placeholder="-  suma  /  +  resta" style="width:150px">
-      <input type="text" id="tn" placeholder="TN">
       <input type="date" id="fechaInput">
       <input type="text" id="puertoInput" placeholder="Puerto">
-      <input type="text" id="localidadInput" placeholder="Localidad">
       <input type="text" id="usuarioInput" placeholder="Usuario">
       <div style="width:100%;display:flex;justify-content:flex-start;margin-top:6px">
         <button id="btnGuardar">Guardar cambios</button>
@@ -121,71 +122,46 @@
     <div id="historial" style="margin-top:12px;display:none">
       <h4>Historial (últimos 200)</h4>
       <table id="tabla-movimientos">
-        <thead><tr><th>Fecha</th><th>Proveedor</th><th>Delta</th><th>Usuario</th><th>TN</th><th>Notas</th></tr></thead>
+        <thead>
+  <tr>
+    <th>Fecha</th>
+    <th>Puerto</th>
+    <th>Proveedor</th>
+    <th>Movimiento</th>
+    <th>Cantidad</th>
+    <th>Usuario</th>
+  </tr>
+</thead>
         <tbody></tbody>
       </table>
     </div>
-    <!-- FORMULARIO DE EXCEPCIÓN (SIN TOCAR STOCK) -->
-    <div class="card" style="margin-top:1rem">
-      <h4>➕ Crear / editar excepción (sin modificar stock)</h4>
-      <div style="display:flex;flex-wrap:wrap;align-items:center">
-        <input type="text" id="admProveedor" placeholder="Proveedor">
-        <input type="text" id="admCliente" placeholder="Cliente">
-        <input type="text" id="admPuerto" placeholder="Puerto">
-        <input type="text" id="admLocalidad" placeholder="Localidad">
-        <input type="date" id="admFecha">
-        <input type="number" id="admAcuerdo" placeholder="Acuerdo (fijo)" style="width:150px">
-        <input type="number" id="admDisponibilidad" placeholder="Disponibilidad (variable)" style="width:150px">
-        <input type="text" id="admTN" placeholder="TN">
-        <input type="text" id="admNotas" placeholder="Notas">
-        <input type="text" id="admUsuario" placeholder="Usuario">
-        <label style="display:flex;align-items:center;margin-left:8px">
-          <input type="checkbox" id="admModificaStock"> Modifica stock general
-        </label>
-        <div style="width:100%;display:flex;justify-content:flex-start;margin-top:6px">
-          <button id="btnAdmGuardarEx">Guardar excepción</button>
-          <button id="btnAdmLimpiarEx" class="alt">Limpiar</button>
-        </div>
+  </div>
+
+  <!-- Modal confirm colorido -->
+  <div id="modalConfirm" class="hidden" style="position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.55);font-family:Inter;align-items:center;justify-content:center;">
+    <div style="background:#fff;margin:auto;padding:25px;border-radius:12px;width:90%;max-width:1200px;height:auto;max-height:80%;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,0.25);zoom:0.8;">
+      <h3 style="margin-top:0;color:#007bff;">📌 Excepciones encontradas</h3>
+      <table id="tablaConfirmEx" style="width:100%;border-collapse:collapse;font-size:0.75rem;color:#222;">
+        <thead>
+          <tr style="background:#e6f2ff;">
+            <th style="padding:6px;border:1px solid #ccc;">Proveedor</th>
+            <th style="padding:6px;border:1px solid #ccc;">Cliente</th>
+            <th style="padding:6px;border:1px solid #ccc;">Acuerdo</th>
+            <th style="padding:6px;border:1px solid #ccc;background:#d4f8e0;">Disponible</th>
+            <th style="padding:6px;border:1px solid #ccc;">Localidad</th>
+            <th style="padding:6px;border:1px solid #ccc;">Notas</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div style="margin-top:20px;text-align:right;">
+        <button id="btnConfirmSi" style="background:var(--primary);color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:0.95rem;margin-right:8px;">✅ Aceptar</button>
       </div>
-      <div class="small hint">Si «Modifica stock general» está activado, la cantidad sumará/restará; si no, solo crea/actualiza la excepción.</div>
     </div>
-    <!-- CARGA MASIVA CSV -->
-    <div class="card" style="margin-top:1rem">
-      <h4>📁 Carga masiva excepciones (CSV)</h4>
-      <label style="font-size:0.9rem">Columnas: proveedor,cliente,puerto,localidad,fecha,acuerdo,disponibilidad,tn,notas,usuario</label>
-      <input type="file" id="csvExcepciones" accept=".csv" style="margin-top:6px">
-      <label style="display:flex;align-items:center;margin-top:8px">
-        <input type="checkbox" id="modoPrueba" checked> 👀 Modo prueba (solo validar, no subir)
-      </label>
-      <button id="btnSubirCsvEx" class="alt">Subir CSV</button>
-      <button id="btnSubirCsvStock" class="alt" style="margin-left:8px">Subir CSV (solo stock general)</button>
-      <pre id="csvLog" style="font-size:0.8rem;margin-top:8px;white-space:pre-wrap"></pre>
-    </div>
-
-<!-- CORREGIR CUALQUIER CAMPO (incluye cantidad) -->
-<div class="card" style="margin-top:1rem">
-  <h4>🔧 Corregir excepciones (CSV)</h4>
-  <label style="font-size:0.9rem">
-    Formato: proveedor,puerto,fecha,cliente,localidadAnt,localidadNueva,acuerdoNuevo,disponibilidadNueva<br>
-    (deja vacío lo que NO quieras tocar)
-  </label>
-  <input type="file" id="csvCorregir" accept=".csv" style="margin-top:6px">
-  <button id="btnCorregirEx" class="alt">Corregir excepciones</button>
-  <pre id="corrLog" style="font-size:0.8rem;margin-top:8px;white-space:pre-wrap"></pre>
-</div>
-
-<!-- BORRAR MASIVO -->
-<div class="card" style="margin-top:1rem">
-  <h4>🗑️ Borrar masivamente (CSV)</h4>
-  <label style="font-size:0.9rem">Formatato: proveedor,puerto,fecha,cliente,localidad</label>
-  <input type="file" id="csvBorrar" accept=".csv" style="margin-top:6px">
-  <button id="btnBorrarMasivo" class="alt" style="background:#dc3545">Borrar por CSV</button>
-  <pre id="delLog" style="font-size:0.8rem;margin-top:8px;white-space:pre-wrap"></pre>
-</div>
   </div>
 </main>
 
-<footer style="padding:12px;text-align:center;color:var(--muted)">Desarrollado por Hugo 🧠 | Firebase + Netlify</footer>
+<footer style="padding:12px;text-align:center;color:var(--muted)">Desarrollado por Hugo ⚓  | Firebase + Netlify</footer>
 
 <script type="module">
   // 1. IMPORTS
@@ -251,221 +227,122 @@
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim().replace(/[^A-Z0-9\/\+_]/g, '');
   }
 
-  // 5. FUNCIONES PRINCIPALES
+  // ⚠️ FUNCIÓN PRINCIPAL CORREGIDA
   async function buscarYMostrar() {
     tablaBody.innerHTML = "";
     noResults.style.display = 'none';
     const fecha     = document.getElementById("filtroFecha").value;
     const puertoRaw = document.getElementById("filtroPuerto").value.trim().toUpperCase();
-    const clienteRaw= document.getElementById("filtroCliente").value.trim().toUpperCase();
-    const localRaw  = document.getElementById("filtroLocalidad").value.trim().toUpperCase();
 
-    if (clienteRaw && localRaw) {
-      let qEx = collection(db, "excepciones");
-      const constraintsEx = [];
-      if (fecha)     constraintsEx.push(where("fecha",  "==", fecha));
-      if (puertoRaw) constraintsEx.push(where("puerto", "==", puertoRaw));
-      if (clienteRaw)constraintsEx.push(where("cliente","==",clienteRaw));
-      if (localRaw)  constraintsEx.push(where("localidad","==",localRaw));
-      qEx = query(qEx, ...constraintsEx);
-      const snapEx = await getDocs(qEx);
-      let found = false;
-      for (const s of snapEx.docs) {
-        const d = s.data();
-        if ((d.puerto||'').toUpperCase().startsWith(puertoRaw) &&
-            (d.cliente||'').toUpperCase().startsWith(clienteRaw) &&
-            (d.localidad||'').toUpperCase().startsWith(localRaw)) {
-          found = true;
-          pintarFilaExcepcion(d, s.id);
-        }
-      }
-      if (found) { disponibilidadCard.classList.remove('hidden'); return; }
+    // 1. Buscar excepciones
+    let qEx = collection(db, "excepciones");
+    const constraintsEx = [];
+    if (fecha)     constraintsEx.push(where("fecha",  "==", fecha));
+    if (puertoRaw) constraintsEx.push(where("puerto", "==", puertoRaw));
+    qEx = query(qEx, ...constraintsEx);
+    const snapEx = await getDocs(qEx);
+
+    let excepcionesTexto = [];
+    for (const s of snapEx.docs) {
+      const d = s.data();
+      excepcionesTexto.push({
+        proveedor: d.proveedor || '',
+        cliente: d.cliente || '',
+        localidad: d.localidad || '',
+        disponibilidad: d.disponibilidad || 0,
+        acuerdo: d.acuerdo || 0,
+        notasAcum: d.notasAcum || ''
+      });
     }
 
+    // ✅ MOSTRAR MODAL SIEMPRE QUE HAYA EXCEPCIONES
+    if (excepcionesTexto.length > 0) {
+      const modal = document.getElementById('modalConfirm');
+      const tbody = document.querySelector('#tablaConfirmEx tbody');
+      tbody.innerHTML = '';
+
+      excepcionesTexto.forEach(e => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="padding:8px 10px;border:1px solid #ddd;">${e.proveedor}</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;">${e.cliente}</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;">${e.acuerdo}</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;background:#d4f8e0;font-weight:600;">${e.disponibilidad}</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;">${e.localidad}</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;">${e.notasAcum}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      modal.classList.remove('hidden');
+
+      const respuesta = await new Promise(resolve => {
+        document.getElementById('btnConfirmSi').onclick = () => {
+          modal.classList.add('hidden');
+          resolve(true);
+        };
+      });
+
+      if (!respuesta) return;
+    }
+
+    // 2. Buscar stock general
     let qGen = collection(db, "stockGeneral");
     const constraintsGen = [];
-    if (fecha)     constraintsGen.push(where("fecha", "==", fecha));
+    if (fecha)     constraintsGen.push(where("fecha",  "==", fecha));
     if (puertoRaw) constraintsGen.push(where("puerto", "==", puertoRaw));
     qGen = query(qGen, ...constraintsGen);
     const snapGen = await getDocs(qGen);
-    let found = false;
-    for (const s of snapGen.docs) {
-      const d = s.data();
-      if ((d.puerto||'').toUpperCase().startsWith(puertoRaw)) {
-        found = true;
-        await pintarFilaGeneral(d, s.id);
-      }
+
+    if (snapGen.empty && excepcionesTexto.length === 0) {
+      noResults.style.display = 'block';
+      disponibilidadCard.classList.add('hidden');
+      return;
     }
-    if (found) { disponibilidadCard.classList.remove('hidden'); return; }
-    noResults.style.display = 'block';
+
+    disponibilidadCard.classList.remove('hidden');
+
+    for (const docGen of snapGen.docs) {
+      const d = docGen.data();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${d.proveedor || ''}</td>
+        <td>-</td>
+        <td>${d.acuerdo ?? ''}</td>
+        <td><strong>${d.disponibilidad ?? 0}</strong></td>
+        <td>${d.puerto || ''}</td>
+        <td>-</td>
+        <td>${d.fecha ? d.fecha.split('-').reverse().join('-') : ''}</td>
+        <td>${d.usuario || ''}</td>
+        <td></td>
+        <td class="actions"><button class="btnEliminarGeneral" data-id="${docGen.id}" style="background:#dc3545">❌</button></td>`;
+      tablaBody.appendChild(tr);
+    }
   }
 
-  async function cantidadUsada(prov, pt, fec) {
-    const q = query(collection(db, 'movimientos'), where('proveedor', '==', prov), where('puerto', '==', pt), where('fecha', '==', fec), where('delta', '<', 0));
-    const snap = await getDocs(q);
-    let usado = 0;
-    snap.forEach(doc => { usado += Math.abs(doc.data().delta || 0); });
-    return usado;
-  }
-
-  async function pintarFilaGeneral(d, id) {
-    const consumido = await cantidadUsada(d.proveedor, d.puerto, d.fecha);
-    const saldo = (d.disponibilidad ?? 0);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${d.proveedor || ''}</td>
-      <td>-</td>
-      <td>${d.acuerdo ?? ''}</td>
-      <td>${saldo}</td>
-      <td>${d.puerto || ''}</td>
-      <td>-</td>
-      <td>${d.fecha || ''}</td>
-      <td>${d.usuario || ''}</td>
-      <td></td>
-      <td class="actions"><button class="btnEliminarGeneral" data-id="${id}" style="background:#dc3545">❌</button></td>`;
-    tablaBody.appendChild(tr);
-  }
-
-  function pintarFilaExcepcion(d, id) {
-  const tr = document.createElement('tr');
-  tr.classList.add('excepcion-row');  // ✅ aquí va "tr"
-  const acuerdo = d.acuerdo ?? d.asignadoFijo ?? d.asignado ?? 0;
-  const disp  = d.disponibilidad ?? d.asignado ?? 0;
-  tr.innerHTML = `
-    <td>${d.proveedor || ''} <span class="badge">Excepción</span></td>
-    <td>${d.cliente || ''}</td>
-    <td>${acuerdo}</td>
-    <td>${disp}</td>
-    <td>${d.puerto || ''}</td>
-    <td>${d.localidad || ''}</td>
-    <td>${d.fecha || ''}</td>
-    <td>${d.usuario || ''}</td>
-    <td>${d.notasAcum || ''}</td>
-    <td class="actions"><button class="btnEliminarExcepcion" data-id="${id}" style="background:#dc3545">❌</button></td>`;
-  tablaBody.appendChild(tr);
-}
-
-  // 6. EVENTOS
+  // 5. EVENTOS
   btnBuscar.addEventListener('click', buscarYMostrar);
+
   document.addEventListener('click', async (e) => {
     if (e.target.classList.contains('btnEliminarGeneral')) {
       if (!confirm('¿Eliminar stock general?')) return;
       await deleteDoc(doc(db, 'stockGeneral', e.target.dataset.id));
       e.target.closest('tr').remove();
     }
-    if (e.target.classList.contains('btnEliminarExcepcion')) {
-      if (!confirm('¿Eliminar excepción? (No se devuelve al stock)')) return;
-      await deleteDoc(doc(db, 'excepciones', e.target.dataset.id));
-      e.target.closest('tr').remove();
-    }
   });
 
-  // ---------- GUARDAR ----------
-  btnGuardar.addEventListener('click', async () => {
-    try {
-      console.log('🔘 Click en Guardar');
-      const proveedor = norm(document.getElementById('proveedor').value.trim());
-      const cliente   = norm(document.getElementById('cliente').value);
-      let cantidadRaw = parseInt(document.getElementById('cantidad').value);
-      console.log('🔍 cantidadRaw introducido', cantidadRaw);
-      if (isNaN(cantidadRaw)) { alert('Cantidad inválida'); return; }
-      const cantidad  = -cantidadRaw;
-      console.log('🔍 cantidad tras cambio de signo', cantidad, '¿es aumento?', cantidad > 0, '¿es reducción?', cantidad < 0);
-      const tnActual  = document.getElementById('tn').value.trim() || '';
-      const fecha     = document.getElementById('fechaInput').value;
-      const puerto    = norm(document.getElementById('puertoInput').value);
-      const localidad = norm(document.getElementById('localidadInput').value);
-      const usuario   = document.getElementById('usuarioInput').value.trim() || '';
-      if (!proveedor || !fecha) { alert('Completa proveedor y fecha'); return; }
-      const esExcepcion = !!(cliente && localidad);
-      const batch       = writeBatch(db);
-      const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
-      const genRef = doc(db, 'stockGeneral', genId);
-      const genSnap= await getDoc(genRef);
-      let dispActual   = genSnap.exists() ? (genSnap.data().disponibilidad ?? 0) : 0;
-      const nuevoDisponible = dispActual + cantidad;
-      const updateData = {
-        proveedor, proveedorNorm: norm(proveedor),
-        fecha, puerto, puertoNorm: puerto,
-        disponibilidad: nuevoDisponible,
-        usuario: usuario || '', tn: ''
-      };
-      if (!genSnap.exists() || genSnap.data().acuerdo === undefined) {
-        updateData.acuerdo = nuevoDisponible; // solo la primera vez
-      }
-      batch.set(genRef, updateData, { merge: true });
-      if (cantidad < 0) {
-        const qEx = query(collection(db, 'excepciones'), where('proveedor', '==', proveedor), where('fecha', '==', fecha), where('puerto', '==', puerto));
-        const excepcionesSnap = await getDocs(qEx);
-        for (const exDoc of excepcionesSnap.docs) {
-          const exData = exDoc.data();
-          const nuevoDisponibleEx = Math.max(0, (exData.disponibilidad || 0) + cantidad);
-          batch.set(exDoc.ref, { disponibilidad: nuevoDisponibleEx }, { merge: true });
-        }
-      }
-      if (cantidad > 0) {
-        const qEx = query(
-  collection(db, 'excepciones'),
-  where('proveedor', '==', proveedor),
-  where('fecha', '==', fecha),
-  where('puerto', '==', puerto)
-);
-const excepcionesSnap = await getDocs(qEx);
-for (const exDoc of excepcionesSnap.docs) {
-  const exData = exDoc.data();
-  const nuevoDisponibleEx = cantidad < 0
-    ? Math.max(0, (exData.disponibilidad ?? exData.asignado ?? 0) + cantidad)
-    : (exData.disponibilidad ?? exData.asignado ?? 0) + cantidad;
-  batch.set(exDoc.ref, { disponibilidad: nuevoDisponibleEx }, { merge: true });
-}
-      }
-      if (esExcepcion) {
-        const exId  = `${norm(proveedor)}::${fecha}::${puerto}::${cliente}::${localidad}`;
-        const exRef = doc(db, 'excepciones', exId);
-        const exSnap= await getDoc(exRef);
-        let dispActualEx = exSnap.exists() ? (exSnap.data().disponibilidad ?? 0) : 0;
-        let acuerdoEx    = exSnap.exists() ? (exSnap.data().acuerdo ?? dispActualEx) : 0;
-        const nuevoDisponibleEx = dispActualEx + cantidad;
-        let tnAcum   = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
-        let notasAcum= exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
-        if (tnActual)   tnAcum += (tnAcum ? ' | ' : '') + `${tnActual}`;
-        batch.set(exRef, {
-          proveedor, proveedorNorm: norm(proveedor),
-          cliente,   clienteNorm:   cliente,
-          fecha,     puerto,        puertoNorm: puerto,
-          localidad, localidadNorm: localidad,
-          acuerdo: acuerdoEx,
-          disponibilidad: nuevoDisponibleEx,
-          usuario: usuario || '',
-          tnAcum: tnAcum,
-          notasAcum: notasAcum
-        }, { merge: true });
-        console.log('💾 Commit con excepción individual');
-        await batch.commit();
-        alert('✅ Stock general y excepción actualizados.');
-        await buscarYMostrar();
-        return;
-      }
-      console.log('💾 Commit solo stock general');
-      await batch.commit();
-      alert('✅ Stock general actualizado.');
-      await buscarYMostrar();
-    } catch (err) {
-      console.error('💥 Error en btnGuardar:', err);
-      alert('Error al guardar: ' + err.message);
-    }
-  });
-
-  // 7. MÁS EVENTOS
-  btnLimpiarPrincipal.addEventListener('click', () => {
-    document.querySelectorAll('#proveedor,#cliente,#cantidad,#tn,#fechaInput,#puertoInput,#localidadInput,#usuarioInput').forEach(i => i.value = '');
-  });
   btnLimpiarBusqueda.addEventListener('click', () => {
-    document.querySelectorAll('#filtroFecha,#filtroPuerto,#filtroCliente,#filtroLocalidad').forEach(i => i.value = '');
+    document.querySelectorAll('#filtroFecha,#filtroPuerto').forEach(i => i.value = '');
     tablaBody.innerHTML = '';
     disponibilidadCard.classList.add('hidden');
     noResults.style.display = 'none';
   });
+
+  // Resto de funciones (abreviadas por espacio)
+  btnLimpiarPrincipal.addEventListener('click', () => {
+    document.querySelectorAll('#proveedor,#cantidad,#fechaInput,#puertoInput,#usuarioInput').forEach(i => i.value = '');
+  });
+
   exportCsvBtn.addEventListener('click', () => {
     const rows = [['Proveedor', 'Cliente', 'Acuerdo', 'Disponible', 'Puerto', 'Localidad', 'Fecha', 'Usuario', 'Notas']];
     document.querySelectorAll('#tabla-stock tbody tr').forEach(tr => {
@@ -474,20 +351,7 @@ for (const exDoc of excepcionesSnap.docs) {
     });
     downloadFile('disponibilidad.csv', csvFromArray(rows));
   });
-  clearVisibleBtn.addEventListener('click', async () => {
-    if (!confirm('¿Borrar todos los registros visibles en la tabla? (Esto eliminará los documentos en Firestore)')) return;
-    const btnsGen = document.querySelectorAll('#tabla-stock tbody .btnEliminarGeneral');
-    const btnsEx  = document.querySelectorAll('#tabla-stock tbody .btnEliminarExcepcion');
-    for (const b of [...btnsGen, ...btnsEx]) {
-      const coleccion = b.classList.contains('btnEliminarGeneral') ? 'stockGeneral' : 'excepciones';
-      await deleteDoc(doc(db, coleccion, b.dataset.id));
-      b.closest('tr').remove();
-    }
-    if (!document.querySelectorAll('#tabla-stock tbody tr').length) disponibilidadCard.classList.add('hidden');
-    alert('🗑️ Filas visibles eliminadas.');
-  });
 
-  // 8. ADMIN
   adminBtn.addEventListener('click', async () => {
     const pw = prompt('Introduce contraseña admin:');
     if (pw === 'admin123') {
@@ -497,352 +361,125 @@ for (const exDoc of excepcionesSnap.docs) {
     }
   });
 
-  // 9. BOTONES NUEVOS (fijar campos)
-  document.getElementById('btnFijarAcuerdosGeneral').addEventListener('click', async () => {
-    if (!confirm('¿Fijar campo "acuerdo" al valor actual de "disponibilidad" en TODOS los stockGeneral?')) return;
-    console.log('🔒 Fijando acuerdos en stockGeneral...');
-    const snap = await getDocs(collection(db, 'stockGeneral'));
-    let ok = 0, err = 0;
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data();
-      const disp = data.disponibilidad ?? 0;
-      const tieneAcuerdo = data.acuerdo !== undefined;
-      if (!tieneAcuerdo) {
-        try {
-          await setDoc(docSnap.ref, { acuerdo: disp }, { merge: true });
-          console.log('✅ stockGeneral', docSnap.id, 'acuerdo =', disp);
-          ok++;
-        } catch (e) {
-          console.warn('❌ Error stockGeneral', docSnap.id, e);
-          err++;
-        }
-      } else {
-        console.log('⏭️ stockGeneral ya tiene acuerdo', docSnap.id);
-      }
-    }
-    alert(`stockGeneral fijados: ${ok}. Errores: ${err}`);
-  });
+  // Inicial
+adminPanel.style.display = 'none';
+// buscarYMostrar(); // ❌ Eliminada — ahora solo se ejecuta al hacer clic en «Buscar»
+// Asegurar que el modal esté SIEMPRE oculto al cargar
+document.getElementById('modalConfirm').classList.add('hidden');
+/* ---------- GUARDAR (stockGeneral + excepciones) ---------- */
+btnGuardar.addEventListener('click', async () => {
+  const proveedor = norm(document.getElementById('proveedor').value.trim());
+  const cantidad  = -parseInt(document.getElementById('cantidad').value);
+  const fecha     = document.getElementById('fechaInput').value;
+  const puerto    = norm(document.getElementById('puertoInput').value);
+  const usuario   = document.getElementById('usuarioInput').value.trim();
 
-  document.getElementById('btnFijarFijoExcepciones').addEventListener('click', async () => {
-    if (!confirm('¿Fijar campo "asignadoFijo" al valor actual de "asignado" en TODAS las excepciones?')) return;
-    console.log('🔒 Fijando asignadoFijo en excepciones...');
-    const snap = await getDocs(collection(db, 'excepciones'));
-    let ok = 0, err = 0;
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data();
-      const asig = data.asignado ?? 0;
-      const tieneFijo = data.asignadoFijo !== undefined;
-      if (!tieneFijo) {
-        try {
-          await setDoc(docSnap.ref, { asignadoFijo: asig }, { merge: true });
-          console.log('✅ excepción', docSnap.id, 'asignadoFijo =', asig);
-          ok++;
-        } catch (e) {
-          console.warn('❌ Error excepción', docSnap.id, e);
-          err++;
-        }
-      } else {
-        console.log('⏭️ excepción ya tiene asignadoFijo', docSnap.id);
-      }
-    }
-    alert(`Excepciones fijadas: ${ok}. Errores: ${err}`);
-  });
+  if (!proveedor || isNaN(cantidad) || !fecha || !puerto || !usuario) {
+    alert('❌ Rellena todos los campos correctamente.');
+    return;
+  }
 
-  // 10. MIGRACIÓN: REESCRIBIR EXCEPCIONES CON NUEVA ESTRUCTURA
-  document.getElementById('btnReescribirBD').addEventListener('click', async () => {
-    if (!confirm('⚠️ ESTO REESCRIBIRÁ TODAS LAS EXCEPCIONES CON LA NUEVA ESTRUCTURA (Acuerdo + Disponibilidad).\n\nSe mantendrán los valores anteriores como "Acuerdo fijo" y se copiarán como "Disponibilidad inicial".\n\n¿Continuar?')) return;
+  try {
+    // 1. Registro en movimientos
+    await addDoc(collection(db, 'movimientos'), {
+      proveedor,
+      cantidad,
+      fecha,
+      puerto,
+      usuario,
+      timestamp: new Date()
+    });
 
-    console.log('🔁 Iniciando reescritura de excepciones...');
-    const snap = await getDocs(collection(db, 'excepciones'));
-    let ok = 0, err = 0;
-
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data();
-      const acuerdo = data.acuerdo ?? data.asignadoFijo ?? data.asignado ?? 0;
-      const disp  = data.disponibilidad ?? data.asignado ?? 0;
-
-      try {
-        await setDoc(docSnap.ref, {
-          acuerdo: acuerdo,
-          disponibilidad: disp,
-          // mantener el resto
-          proveedor: data.proveedor,
-          cliente: data.cliente,
-          fecha: data.fecha,
-          puerto: data.puerto,
-          localidad: data.localidad,
-          usuario: data.usuario || '',
-          tnAcum: data.tnAcum || '',
-          notasAcum: data.notasAcum || ''
-        }, { merge: true });
-        console.log('✅ Reescrita excepción', docSnap.id);
-        ok++;
-      } catch (e) {
-        console.warn('❌ Error reescribiendo', docSnap.id, e);
-        err++;
-      }
-    }
-
-    alert(`✅ Reescritura finalizada.\nExcepciones actualizadas: ${ok}.\nErrores: ${err}.\n\nAhora puedes sumar/restar sin tocar "Acuerdo".`);
-    await buscarYMostrar();
-  });
-
-  // ---------- FORMULARIO ADMIN DE EXCEPCIÓN ----------
-  const btnAdmGuardarEx = document.getElementById('btnAdmGuardarEx');
-  const btnAdmLimpiarEx = document.getElementById('btnAdmLimpiarEx');
-
-  btnAdmGuardarEx.addEventListener('click', async () => {
-    const proveedor = norm(document.getElementById('proveedor').value.trim());
-    const cliente   = norm(document.getElementById('admCliente').value);
-    const puerto    = norm(document.getElementById('admPuerto').value);
-    const localidad = norm(document.getElementById('admLocalidad').value);
-    const fecha     = document.getElementById('admFecha').value;
-    const acuerdo   = parseInt(document.getElementById('admAcuerdo').value);
-    const disp      = parseInt(document.getElementById('admDisponibilidad').value);
-    const tn        = document.getElementById('admTN').value.trim() || '';
-    const notas     = document.getElementById('admNotas').value.trim() || '';
-    const usuario   = document.getElementById('admUsuario').value.trim() || '';
-    const modifica  = document.getElementById('admModificaStock').checked;
-
-    if (!proveedor || !cliente || !localidad || !fecha || isNaN(acuerdo) || isNaN(disp)) {
-      alert('Completa proveedor, cliente, localidad, fecha, acuerdo y disponibilidad'); return;
-    }
-
+    // 2. Actualizar stockGeneral
     const batch = writeBatch(db);
-    const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
+    const genId  = `${proveedor}::${fecha}::${puerto}`;
     const genRef = doc(db, 'stockGeneral', genId);
-    const exId   = `${norm(proveedor)}::${fecha}::${puerto}::${cliente}::${localidad}`;
-    const exRef  = doc(db, 'excepciones', exId);
+    const genSnap = await getDoc(genRef);
 
-    if (modifica) {
-      const genSnap = await getDoc(genRef);
-      let dispGeneral = genSnap.exists() ? (genSnap.data().disponibilidad || 0) : 0;
-      const nuevoGeneral = dispGeneral + disp;
-      if (nuevoGeneral < 0) { alert('Stock insuficiente'); return; }
-      batch.set(genRef, {
-        proveedor, proveedorNorm: norm(proveedor),
-        fecha, puerto, puertoNorm: puerto,
-        disponibilidad: nuevoGeneral,
-        usuario: usuario || '', tn: ''
-      }, { merge: true });
-    }
+    const dispActual = genSnap.exists() ? (genSnap.data().disponibilidad || 0) : 0;
+    const nuevoDisp  = dispActual + cantidad;
 
-    const exSnap = await getDoc(exRef);
-    let tnAcum   = exSnap.exists() ? (exSnap.data().tnAcum || '') : '';
-    let notasAcum= exSnap.exists() ? (exSnap.data().notasAcum || '') : '';
-    if (tn)   tnAcum   += (tnAcum   ? ' | ' : '') + tn;
-    if (notas) notasAcum += (notasAcum ? ' | ' : '') + notas;
-
-    batch.set(exRef, {
-      proveedor, proveedorNorm: norm(proveedor),
-      cliente,   clienteNorm:   cliente,
-      fecha,     puerto,        puertoNorm: puerto,
-      localidad, localidadNorm: localidad,
-      acuerdo: acuerdo,
-      disponibilidad: disp,
-      usuario: usuario || '',
-      tnAcum, notasAcum
+    batch.set(genRef, {
+      proveedor,
+      proveedorNorm: proveedor,
+      fecha,
+      puerto,
+      puertoNorm: puerto,
+      disponibilidad: nuevoDisp,
+      acuerdo: genSnap.exists() ? (genSnap.data().acuerdo ?? nuevoDisp) : nuevoDisp,
+      usuario
     }, { merge: true });
 
+    // 3. Restar también en todas las excepciones que coincidan
+    const qEx = query(
+      collection(db, 'excepciones'),
+      where('proveedor', '==', proveedor),
+      where('fecha', '==', fecha),
+      where('puerto', '==', puerto)
+    );
+    const exSnap = await getDocs(qEx);
+    exSnap.forEach(docEx => {
+      const exData = docEx.data();
+      const actualEx = exData.disponibilidad || 0;
+      const nuevoEx  = Math.max(0, actualEx + cantidad); // no negativo
+      batch.set(docEx.ref, { disponibilidad: nuevoEx }, { merge: true });
+    });
+
     await batch.commit();
-    alert(modifica ? '✅ Excepción creada y stock actualizado.' : '✅ Excepción creada sin tocar stock.');
-    await buscarYMostrar();
+    alert('✅ Stock general y excepciones actualizados.');
+    btnLimpiarPrincipal.click();
+    if (!disponibilidadCard.classList.contains('hidden')) await buscarYMostrar();
+  } catch (err) {
+    console.error('💥 Error al guardar:', err);
+    alert('❌ Error al guardar: ' + err.message);
+  }
+});
+/* ---------- VER HISTORIAL (FECHA - PUERTO - PROV - MOV - CANT - USER) ---------- */
+btnHistorial.addEventListener('click', async () => {
+  // últimos 500 movimientos, más recientes primero
+  const q = query(collection(db, 'movimientos'), orderBy('timestamp', 'desc'), limit(500));
+  const snap = await getDocs(q);
+
+  // cabecera de la tabla
+  tablaMov.innerHTML = '';
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${d.fecha.split('-').reverse().join('/')}</td>
+      <td>${d.puerto || ''}</td>
+      <td>${d.proveedor || ''}</td>
+      <td>${d.cantidad > 0 ? 'SUMA' : 'RESTA'}</td>
+      <td>${d.cantidad}</td>
+      <td>${d.usuario || ''}</td>
+    `;
+    tablaMov.appendChild(tr);
   });
 
-  btnAdmLimpiarEx.addEventListener('click', () => {
-    document.querySelectorAll('#admProveedor,#admCliente,#admPuerto,#admLocalidad,#admFecha,#admAcuerdo,#admDisponibilidad,#admTN,#admNotas,#admUsuario').forEach(i => i.value = '');
-    document.getElementById('admModificaStock').checked = false;
+  historialDiv.style.display = 'block';
+});
+
+/* ---------- EXPORTAR TODO (MISMA TABLA QUE SE VE) ---------- */
+btnExportAll.addEventListener('click', async () => {
+  // mismos 500 movimientos que se cargan en "Ver historial"
+  const q = query(collection(db, 'movimientos'), orderBy('timestamp', 'desc'), limit(500));
+  const snap = await getDocs(q);
+
+  const rows = [['Fecha', 'Puerto', 'Proveedor', 'Movimiento', 'Cantidad', 'Usuario']];
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    rows.push([
+      d.fecha.split('-').reverse().join('/'), // DD/MM/YYYY
+      d.puerto || '',
+      d.proveedor || '',
+      d.cantidad > 0 ? 'SUMA' : 'RESTA',
+      d.cantidad,
+      d.usuario || ''
+    ]);
   });
 
-  // ---------- CARGA MASIVA EXCEPCIONES (CSV) ----------
-  document.getElementById('btnSubirCsvEx').addEventListener('click', async () => {
-    const file = document.getElementById('csvExcepciones').files[0];
-    if (!file) { alert('Selecciona un archivo CSV'); return; }
-    const log = document.getElementById('csvLog');
-    log.textContent = 'Procesando EXCEPCIONES...\n';
-    const text = await file.text();
-    const lines = text.split(/\r?\n/).filter(l => l.trim());
-    const headers = lines.shift().split(',').map(h => h.trim().toLowerCase().replace(/\s+/g,''));
-    const required = ['proveedor','cliente','puerto','localidad','fecha','acuerdo','disponibilidad'];
-    const missing = required.filter(h => !headers.includes(h));
-    if (missing.length) { log.textContent = `❌ Faltan columnas: ${missing.join(', ')}`; return; }
-    let batch = writeBatch(db); let ok = 0, err = 0;
-    for (const raw of lines) {
-      const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
-      const row = {}; headers.forEach((h, i) => row[h] = cols[i] || '');
-      const proveedor       = row.proveedor;
-      const clienteOriginal = row.cliente.trim();
-      const clienteNorm     = norm(clienteOriginal);
-      const puerto          = norm(row.puerto);
-      const localidadOriginal = row.localidad.trim();
-      const localidadNorm     = norm(localidadOriginal);
-      let fecha = row.fecha.trim().replace(/"/g, '');
-      if (fecha.includes('/')) { const [d, m, a] = fecha.split('/'); fecha = `${a}-${m}-${d}`; }
-      const acuerdo = parseInt(row.acuerdo);
-      const disp    = parseInt(row.disponibilidad);
-      const tn        = row.tn || '';
-      const notas     = row.notas || '';
-      const usuario   = row.usuario || '';
-      if (!proveedor || !clienteOriginal || !localidadOriginal || !fecha || isNaN(acuerdo) || isNaN(disp)) { err++; continue; }
-      const exId   = `${norm(proveedor)}::${fecha}::${norm(puerto)}::${clienteNorm}::${localidadNorm}`;
-      const exRef  = doc(db, 'excepciones', exId);
-      if (document.getElementById('modoPrueba')?.checked) {
-        console.log('ID excepción:', exId, 'datos:', { acuerdo, disponibilidad: disp, fecha, cliente: clienteOriginal, puerto, localidad: localidadOriginal, proveedor });
-        ok++; continue;
-      }
-      let tnAcum   = '', notasAcum = '';
-      if (tn)   tnAcum   += tn;
-      if (notas) notasAcum += notas;
-      batch.set(exRef, {
-        proveedor,
-        cliente     : clienteOriginal,
-        clienteNorm : clienteNorm,
-        fecha,
-        puerto,
-        puertoNorm  : norm(puerto),
-        localidad   : localidadOriginal,
-        localidadNorm: localidadNorm,
-        acuerdo: acuerdo,
-        disponibilidad: disp,
-        usuario: usuario || '',
-        tnAcum, notasAcum
-      }, { merge: true });
-      ok++;
-      if ((ok + err) % 450 === 0) { await batch.commit(); batch = writeBatch(db); }
-    }
-    if (!document.getElementById('modoPrueba')?.checked) {
-      try { await batch.commit(); } catch (e) { log.textContent += 'Error final: ' + e.message; }
-    }
-    log.textContent = `✅ ${ok} excepciones procesadas. ❌ ${err} errores.`;
-    if (!document.getElementById('modoPrueba')?.checked) await buscarYMostrar();
-  });
-
-  // ---------- CARGA MASIVA STOCK GENERAL ----------
-  document.getElementById('btnSubirCsvStock').addEventListener('click', async () => {
-    const file = document.getElementById('csvExcepciones').files[0];
-    if (!file) { alert('Selecciona un archivo CSV'); return; }
-    const log = document.getElementById('csvLog');
-    log.textContent = 'Procesando STOCK GENERAL...\n';
-    const text = await file.text();
-    const lines = text.split(/\r?\n/).filter(l => l.trim());
-    const headers = lines.shift().split(',').map(h => h.trim().toLowerCase().replace(/\s+/g,''));
-    const required = ['proveedor','puerto','fecha','disponibilidad'];
-    const missing = required.filter(h => !headers.includes(h));
-    if (missing.length) { log.textContent = `❌ Faltan columnas: ${missing.join(', ')}`; return; }
-    let batch = writeBatch(db); let ok = 0, err = 0;
-    for (const raw of lines) {
-      const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
-      const row = {}; headers.forEach((h, i) => row[h] = cols[i] || '');
-      const proveedor = row.proveedor.trim();
-      const puerto    = norm(row.puerto);
-      let fecha = row.fecha.trim().replace(/"/g, '');
-      if (fecha.includes('/')) { const [d, m, a] = fecha.split('/'); fecha = `${a}-${m}-${d}`; }
-      const disp = parseInt(row.disponibilidad);
-      const usuario = row.usuario || '';
-      const tn = row.tn || '';
-      const notas = row.notas || '';
-      if (!proveedor || !puerto || !fecha || isNaN(disp) || row.cliente || row.localidad) { err++; continue; }
-      const genId  = `${norm(proveedor)}::${fecha}::${puerto}`;
-      const genRef = doc(db, 'stockGeneral', genId);
-      const snap = await getDoc(genRef);
-      const dispActual = snap.exists() ? (snap.data().disponibilidad || 0) : 0;
-      const nuevaDisp  = dispActual + disp;
-      if (document.getElementById('modoPrueba')?.checked) {
-        console.log('ID stock:', genId, 'delta:', disp, 'nuevo:', nuevaDisp);
-        ok++; continue;
-      }
-      batch.set(genRef, {
-        proveedor,
-        proveedorNorm: norm(proveedor),
-        fecha,
-        puerto,
-        puertoNorm: puerto,
-        disponibilidad: nuevaDisp,
-        usuario,
-        tn
-      }, { merge: true });
-      ok++;
-      if ((ok + err) % 450 === 0) { await batch.commit(); batch = writeBatch(db); }
-    }
-    if (!document.getElementById('modoPrueba')?.checked) {
-      try { await batch.commit(); } catch (e) { log.textContent += 'Error final: ' + e.message; }
-    }
-    log.textContent = `✅ ${ok} stocks procesados. ❌ ${err} filas descartadas.`;
-    if (!document.getElementById('modoPrueba')?.checked) await buscarYMostrar();
-  });
-
-  // ---------- CORREGIR / BORRAR MASIVO ----------
-  document.getElementById('btnCorregirEx').addEventListener('click', async () => {
-    const file = document.getElementById('csvCorregir').files[0];
-    if (!file) { alert('Selecciona el CSV de corrección'); return; }
-    const log = document.getElementById('corrLog');
-    log.textContent = 'Corrigiendo...\n';
-    const text = await file.text();
-    const lines = text.split(/\r?\n/).filter(l => l.trim());
-    const headers = lines.shift().split(',').map(h => h.trim().toLowerCase());
-    const reqId = ['proveedor','puerto','fecha','cliente','localidadant','localidadnueva'];
-    const miss = reqId.filter(h => !headers.includes(h));
-    if (miss.length) { log.textContent = `❌ Faltan: ${miss.join(', ')}`; return; }
-    let ok = 0, err = 0;
-    for (const raw of lines) {
-      const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
-      if (cols.length < reqId.length) { err++; continue; }
-      const [prov, pt, fec, cli, locAnt, locNue] = cols.slice(0, 6);
-      const acuerdoNuevo = cols[6] ? parseInt(cols[6]) : null;
-      const dispNueva    = cols[7] ? parseInt(cols[7]) : null;
-      if (!prov || !pt || !fec || !cli || !locAnt || !locNue) { err++; continue; }
-      const fecha = fec.includes('/') ? fec.split('/').reverse().join('-') : fec;
-      const exId = `${norm(prov)}::${fecha}::${norm(pt)}::${norm(cli)}::${norm(locAnt)}`;
-      const ref = doc(db, 'excepciones', exId);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) { err++; continue; }
-      const cambios = { localidad: locNue.trim(), localidadNorm: norm(locNue) };
-      if (!isNaN(acuerdoNuevo)) cambios.acuerdo = acuerdoNuevo;
-      if (!isNaN(dispNueva))    cambios.disponibilidad = dispNueva;
-      await setDoc(ref, cambios, { merge: true });
-      ok++;
-    }
-    log.textContent = `✅ ${ok} excepciones corregidas. ❌ ${err} errores.`;
-    await buscarYMostrar();
-  });
-
-  document.getElementById('btnBorrarMasivo').addEventListener('click', async () => {
-    const file = document.getElementById('csvBorrar').files[0];
-    if (!file) { alert('Selecciona el CSV a borrar'); return; }
-    if (!confirm('⚠️ Vas a BORRAR los documentos del CSV. ¿Continuar?')) return;
-    const log = document.getElementById('delLog');
-    log.textContent = 'Borrando...\n';
-    const text = await file.text();
-    const lines = text.split(/\r?\n/).filter(l => l.trim());
-    const headers = lines.shift().split(',').map(h => h.trim().toLowerCase());
-    const req = ['proveedor','puerto','fecha','cliente','localidad'];
-    const miss = req.filter(h => !headers.includes(h));
-    if (miss.length) { log.textContent = `❌ Faltan: ${miss.join(', ')}`; return; }
-    let ok = 0, err = 0;
-    for (const raw of lines) {
-      const cols = raw.split(/[,;]/).map(c => c.trim().replace(/^"+|"+$/g, ''));
-      if (cols.length < req.length) { err++; continue; }
-      const [prov, pt, fec, cli, loc] = cols;
-      if (!prov || !pt || !fec || !cli || !loc) { err++; continue; }
-      const fecha = fec.includes('/') ? fec.split('/').reverse().join('-') : fec;
-      const exId = `${norm(prov)}::${fecha}::${norm(pt)}::${norm(cli)}::${norm(loc)}`;
-      try {
-        await deleteDoc(doc(db, 'excepciones', exId));
-        ok++;
-      } catch (e) {
-        err++;
-      }
-    }
-    log.textContent = `🗑️ ${ok} borrados. ❌ ${err} errores.`;
-    await buscarYMostrar();
-  });
-
-console.log('norm("avanza") =', norm("avanza"));
-console.log('norm("AVANZA") =', norm("AVANZA"));
-console.log('norm(" Avanza ") =', norm(" Avanza "));
-
-  // Inicial
-  adminPanel.style.display = 'none';
+  downloadFile('historial_completo.csv', csvFromArray(rows));
+});
 </script>
 </body>
 </html>
