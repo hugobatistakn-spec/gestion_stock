@@ -144,8 +144,8 @@
       <table id="tablaConfirmEx" style="width:100%;border-collapse:collapse;font-size:0.75rem;color:#222;">
         <thead>
           <tr style="background:#e6f2ff;">
-            <th style="padding:6px;border:1px solid #ccc;">Proveedor</th>
             <th style="padding:6px;border:1px solid #ccc;">Cliente</th>
+            <th style="padding:6px;border:1px solid #ccc;">Proveedor</th>
             <th style="padding:6px;border:1px solid #ccc;">Acuerdo</th>
             <th style="padding:6px;border:1px solid #ccc;background:#d4f8e0;">Disponible</th>
             <th style="padding:6px;border:1px solid #ccc;">Localidad</th>
@@ -246,8 +246,8 @@
     for (const s of snapEx.docs) {
       const d = s.data();
       excepcionesTexto.push({
+	cliente: d.cliente || '',
         proveedor: d.proveedor || '',
-        cliente: d.cliente || '',
         localidad: d.localidad || '',
         disponibilidad: d.disponibilidad || 0,
         acuerdo: d.acuerdo || 0,
@@ -255,37 +255,11 @@
       });
     }
 
-    // ✅ MOSTRAR MODAL SIEMPRE QUE HAYA EXCEPCIONES
-    if (excepcionesTexto.length > 0) {
-      const modal = document.getElementById('modalConfirm');
-      const tbody = document.querySelector('#tablaConfirmEx tbody');
-      tbody.innerHTML = '';
+// 2. ORDENAR POR CLIENTE A-Z
+  excepcionesTexto.sort((a, b) => a.cliente.localeCompare(b.cliente));
 
-      excepcionesTexto.forEach(e => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="padding:8px 10px;border:1px solid #ddd;">${e.proveedor}</td>
-          <td style="padding:8px 10px;border:1px solid #ddd;">${e.cliente}</td>
-          <td style="padding:8px 10px;border:1px solid #ddd;">${e.acuerdo}</td>
-          <td style="padding:8px 10px;border:1px solid #ddd;background:#d4f8e0;font-weight:600;">${e.disponibilidad}</td>
-          <td style="padding:8px 10px;border:1px solid #ddd;">${e.localidad}</td>
-          <td style="padding:8px 10px;border:1px solid #ddd;">${e.notasAcum}</td>
-        `;
-        tbody.appendChild(tr);
-      });
 
-      modal.classList.remove('hidden');
-
-      const respuesta = await new Promise(resolve => {
-        document.getElementById('btnConfirmSi').onclick = () => {
-          modal.classList.add('hidden');
-          resolve(true);
-        };
-      });
-
-      if (!respuesta) return;
-    }
-
+    
     // 2. Buscar stock general
     let qGen = collection(db, "stockGeneral");
     const constraintsGen = [];
@@ -320,39 +294,80 @@
     }
   }
 
-  // 5. EVENTOS
-  btnBuscar.addEventListener('click', buscarYMostrar);
+  btnBuscar.addEventListener('click', async () => {
+  // 1. Obtener excepciones antes de pintar
+  const fecha     = document.getElementById("filtroFecha").value;
+  const puertoRaw = document.getElementById("filtroPuerto").value.trim().toUpperCase();
 
-  document.addEventListener('click', async (e) => {
-    if (e.target.classList.contains('btnEliminarGeneral')) {
-      if (!confirm('¿Eliminar stock general?')) return;
-      await deleteDoc(doc(db, 'stockGeneral', e.target.dataset.id));
-      e.target.closest('tr').remove();
-    }
-  });
+  let qEx = collection(db, "excepciones");
+  const constraintsEx = [];
+  if (fecha)     constraintsEx.push(where("fecha",  "==", fecha));
+  if (puertoRaw) constraintsEx.push(where("puerto", "==", puertoRaw));
+  qEx = query(qEx, ...constraintsEx);
+  const snapEx = await getDocs(qEx);
 
-  btnLimpiarBusqueda.addEventListener('click', () => {
-    document.querySelectorAll('#filtroFecha,#filtroPuerto').forEach(i => i.value = '');
-    tablaBody.innerHTML = '';
-    disponibilidadCard.classList.add('hidden');
-    noResults.style.display = 'none';
-  });
-
-  // Resto de funciones (abreviadas por espacio)
-  btnLimpiarPrincipal.addEventListener('click', () => {
-    document.querySelectorAll('#proveedor,#cantidad,#fechaInput,#puertoInput,#usuarioInput').forEach(i => i.value = '');
-  });
-
-  exportCsvBtn.addEventListener('click', () => {
-    const rows = [['Proveedor', 'Cliente', 'Acuerdo', 'Disponible', 'Puerto', 'Localidad', 'Fecha', 'Usuario', 'Notas']];
-    document.querySelectorAll('#tabla-stock tbody tr').forEach(tr => {
-      const cols = Array.from(tr.querySelectorAll('td')).slice(0, 9).map(td => td.textContent.trim());
-      if (cols.length) rows.push(cols);
+  let excepcionesTexto = [];
+  for (const s of snapEx.docs) {
+    const d = s.data();
+    excepcionesTexto.push({
+      cliente: d.cliente || '',
+      proveedor: d.proveedor || '',
+      localidad: d.localidad || '',
+      disponibilidad: d.disponibilidad || 0,
+      acuerdo: d.acuerdo || 0,
+      notasAcum: d.notasAcum || ''
     });
-    downloadFile('disponibilidad.csv', csvFromArray(rows));
-  });
+  }
 
-  adminBtn.addEventListener('click', async () => {
+  // 2. ORDENAR POR CLIENTE A-Z
+  excepcionesTexto.sort((a, b) => a.cliente.localeCompare(b.cliente));
+
+  // 3. MOSTRAR MODAL SI HAY EXCEPCIONES
+  if (excepcionesTexto.length > 0) {
+    const modal = document.getElementById('modalConfirm');
+    const tbody = document.querySelector('#tablaConfirmEx tbody');
+    tbody.innerHTML = '';
+
+    excepcionesTexto.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding:8px 10px;border:1px solid #ddd;">${e.cliente}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;">${e.proveedor}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;">${e.acuerdo}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;background:#d4f8e0;font-weight:600;">${e.disponibilidad}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;">${e.localidad}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;">${e.notasAcum}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    modal.classList.remove('hidden');
+
+    await new Promise(resolve => {
+      document.getElementById('btnConfirmSi').onclick = () => {
+        modal.classList.add('hidden');
+        resolve(true);
+      };
+    });
+  }
+
+
+  // 4. CONTINUAR con la búsqueda normal
+  await buscarYMostrar();
+});
+
+btnLimpiarBusqueda.addEventListener('click', () => {
+  document.querySelectorAll('#filtroFecha,#filtroPuerto').forEach(i => i.value = '');
+  tablaBody.innerHTML = '';
+  disponibilidadCard.classList.add('hidden');
+  noResults.style.display = 'none';
+});
+
+btnLimpiarPrincipal.addEventListener('click', () => {
+  document.querySelectorAll('#proveedor,#cantidad,#fechaInput,#puertoInput,#usuarioInput').forEach(i => i.value = '');
+});
+
+adminBtn.addEventListener('click', async () => {
     const pw = prompt('Introduce contraseña admin:');
     if (pw === 'admin123') {
       adminPanel.style.display = adminPanel.style.display === 'block' ? 'none' : 'block';
@@ -361,11 +376,6 @@
     }
   });
 
-  // Inicial
-adminPanel.style.display = 'none';
-// buscarYMostrar(); // ❌ Eliminada — ahora solo se ejecuta al hacer clic en «Buscar»
-// Asegurar que el modal esté SIEMPRE oculto al cargar
-document.getElementById('modalConfirm').classList.add('hidden');
 /* ---------- GUARDAR (stockGeneral + excepciones) ---------- */
 btnGuardar.addEventListener('click', async () => {
   const proveedor = norm(document.getElementById('proveedor').value.trim());
