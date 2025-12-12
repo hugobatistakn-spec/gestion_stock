@@ -50,17 +50,24 @@
 <main>
   <!-- BUSCAR -->
   <div class="card">
-    <h3>🔍 Buscar disponibilidad</h3>
-    <div style="display:flex;flex-wrap:wrap;align-items:center">
-      <input type="date" id="filtroFecha">
-      <input type="text" id="filtroPuerto" placeholder="Puerto">
-      <div style="margin-left:auto">
-        <button id="btnBuscar">Buscar</button>
-        <button id="btnLimpiarBusqueda" class="alt">🧹 Limpiar</button>
-      </div>
+  <h3>🔍 Buscar disponibilidad</h3>
+  <div style="display:flex;flex-wrap:wrap;align-items:center">
+    <input type="date" id="filtroFecha">
+    <select id="filtroPuerto">
+      <option value="">Puerto</option>
+      <option value="ESBIO">ESBIO</option>
+      <option value="ESVGO">ESVGO</option>
+      <option value="ESVLC">ESVLC</option>
+      <option value="ESBCN">ESBCN</option>
+      <option value="ESALG">ESALG</option>
+    </select>
+    <div style="margin-left:auto">
+      <button id="btnBuscar">Buscar</button>
+      <button id="btnLimpiarBusqueda" class="alt">🧹 Limpiar</button>
     </div>
-    <div class="small hint">Fecha+Puerto → stock general</div>
   </div>
+  <div class="small hint">Fecha+Puerto → stock general</div>
+</div>
 
   <!-- RESULTADOS -->
   <div id="disponibilidadCard" class="card hidden">
@@ -73,40 +80,38 @@
     </div>
     <table id="tabla-stock">
       <thead>
-        <tr>
-          <th>Proveedor</th>
-          <th>Cliente</th>
-          <th>Acuerdo</th>
-          <th>Disponible</th>
-          <th>Puerto</th>
-          <th>Localidad</th>
-          <th>Fecha</th>
-          <th>Usuario</th>
-          <th>Notas</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
+  <tr>
+    <th>Proveedor</th>
+    <th>Acuerdo</th>
+    <th>Disponible</th>
+    <th>Puerto</th>
+    <th>Localidad</th>
+    <th>Fecha</th>
+    <th>Usuario</th>
+    <th>Acciones</th>
+  </tr>
+</thead>
       <tbody></tbody>
     </table>
     <div id="noResults" class="small" style="display:none;margin-top:8px">No hay resultados.</div>
   </div>
 
-  <!-- AÑADIR / REDUCIR -->
-  <div class="card">
-    <h3>🚛 Gestionar Reserva 🚛</h3>
-    <div style="display:flex;flex-wrap:wrap;align-items:center">
-      <input type="text" id="proveedor" placeholder="Proveedor">
-      <input type="number" id="cantidad" placeholder="-  suma  /  +  resta" style="width:150px">
-      <input type="date" id="fechaInput">
-      <input type="text" id="puertoInput" placeholder="Puerto">
-      <input type="text" id="usuarioInput" placeholder="Usuario">
-      <div style="width:100%;display:flex;justify-content:flex-start;margin-top:6px">
-        <button id="btnGuardar">Guardar cambios</button>
-        <button id="btnLimpiarPrincipal" class="alt">🧹 Limpiar</button>
-      </div>
+  <!-- AÑADIR / REDUCIR – oculto hasta Buscar -->
+<div id="reservaCard" class="card hidden">
+  <h3>🚛 Gestionar Reserva 🚛</h3>
+  <div style="display:flex;flex-wrap:wrap;align-items:center">
+    <select id="proveedor" placeholder="Proveedor"></select>
+    <input type="number" id="cantidad" placeholder="-  suma  /  +  resta" style="width:150px">
+    <input type="date" id="fechaInput">
+    <select id="puertoInput"></select>
+    <input type="text" id="usuarioInput" placeholder="Usuario">
+    <div style="width:100%;display:flex;justify-content:flex-start;margin-top:6px">
+      <button id="btnGuardar">Guardar cambios</button>
+      <button id="btnLimpiarPrincipal" class="alt">🧹 Limpiar</button>
     </div>
-    <div class="small hint">Gestionar Reserva de Transporte</div>
   </div>
+  <div class="small hint">Gestionar Reserva de Transporte</div>
+</div>
 
   <!-- ADMIN -->
   <div id="adminPanel" class="card">
@@ -281,24 +286,23 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${d.proveedor || ''}</td>
-        <td>-</td>
         <td>${d.acuerdo ?? ''}</td>
         <td><strong>${d.disponibilidad ?? 0}</strong></td>
         <td>${d.puerto || ''}</td>
         <td>-</td>
         <td>${d.fecha ? d.fecha.split('-').reverse().join('-') : ''}</td>
         <td>${d.usuario || ''}</td>
-        <td></td>
-        <td class="actions"><button class="btnEliminarGeneral" data-id="${docGen.id}" style="background:#dc3545">❌</button></td>`;
+        <td class="actions"><button class="btnEliminarGeneral" data-id="${docGen.id}" style="background:#dc3545">❌</button></td>
+`;
       tablaBody.appendChild(tr);
     }
   }
 
-  btnBuscar.addEventListener('click', async () => {
-  // 1. Obtener excepciones antes de pintar
+ btnBuscar.addEventListener('click', async () => {
   const fecha     = document.getElementById("filtroFecha").value;
-  const puertoRaw = document.getElementById("filtroPuerto").value.trim().toUpperCase();
+  const puertoRaw = document.getElementById("filtroPuerto").value;
 
+  // 1. Excepciones (tu código ya hecho)
   let qEx = collection(db, "excepciones");
   const constraintsEx = [];
   if (fecha)     constraintsEx.push(where("fecha",  "==", fecha));
@@ -307,7 +311,7 @@
   const snapEx = await getDocs(qEx);
 
   let excepcionesTexto = [];
-  for (const s of snapEx.docs) {
+  snapEx.forEach(s => {
     const d = s.data();
     excepcionesTexto.push({
       cliente: d.cliente || '',
@@ -317,17 +321,41 @@
       acuerdo: d.acuerdo || 0,
       notasAcum: d.notasAcum || ''
     });
+  });
+  
+
+document.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('btnEliminarGeneral')) {
+    console.log('🎯 Botón pulsado');
+    console.log('📄 data-id:', e.target.dataset.id);
+    const id = e.target.dataset.id;
+    if (!id) { console.warn('⚠️ ID vacío'); return; }
+
+    if (!confirm('¿Eliminar stock general?')) {
+      console.log('❌ Usuario canceló');
+      return;
+    }
+
+    try {
+      console.log('🗑️ Borrando...', id);
+      await deleteDoc(doc(db, 'stockGeneral', id));
+      console.log('✅ Borrado en Firestore');
+      e.target.closest('tr').remove();
+      console.log('🧹 Fila eliminada del DOM');
+    } catch (err) {
+      console.error('💥 Error al borrar:', err.code, err.message);
+    }
   }
+});
 
   // 2. ORDENAR POR CLIENTE A-Z
-  excepcionesTexto.sort((a, b) => a.cliente.localeCompare(b.cliente));
+   excepcionesTexto.sort((a, b) => a.cliente.localeCompare(b.cliente));
 
   // 3. MOSTRAR MODAL SI HAY EXCEPCIONES
-  if (excepcionesTexto.length > 0) {
+ if (excepcionesTexto.length > 0) {
     const modal = document.getElementById('modalConfirm');
     const tbody = document.querySelector('#tablaConfirmEx tbody');
     tbody.innerHTML = '';
-
     excepcionesTexto.forEach(e => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -340,9 +368,7 @@
       `;
       tbody.appendChild(tr);
     });
-
     modal.classList.remove('hidden');
-
     await new Promise(resolve => {
       document.getElementById('btnConfirmSi').onclick = () => {
         modal.classList.add('hidden');
@@ -354,6 +380,8 @@
 
   // 4. CONTINUAR con la búsqueda normal
   await buscarYMostrar();
+  reservaCard.classList.remove('hidden');   // ⬅️ muestra gestión
+  await cargarProveedoresYFijarPuerto();    // ⬅️ llena selects
 });
 
 btnLimpiarBusqueda.addEventListener('click', () => {
@@ -361,10 +389,12 @@ btnLimpiarBusqueda.addEventListener('click', () => {
   tablaBody.innerHTML = '';
   disponibilidadCard.classList.add('hidden');
   noResults.style.display = 'none';
+  reservaCard.classList.add('hidden'); // <-- oculta gestión
 });
-
 btnLimpiarPrincipal.addEventListener('click', () => {
-  document.querySelectorAll('#proveedor,#cantidad,#fechaInput,#puertoInput,#usuarioInput').forEach(i => i.value = '');
+  document.querySelectorAll('#cantidad,#fechaInput,#usuarioInput').forEach(i => i.value = '');
+  document.getElementById('proveedor').selectedIndex = 0;
+  document.getElementById('puertoInput').selectedIndex = 0;
 });
 
 adminBtn.addEventListener('click', async () => {
@@ -490,6 +520,40 @@ btnExportAll.addEventListener('click', async () => {
 
   downloadFile('historial_completo.csv', csvFromArray(rows));
 });
+
+async function cargarProveedoresYFijarPuerto() {
+  const puertoElegido = document.getElementById('filtroPuerto').value;
+  const fechaElegida   = document.getElementById('filtroFecha').value;
+  if (!puertoElegido || !fechaElegida) return;
+
+  // Fijar puerto en reserva
+  const puertoInputSelect = document.getElementById('puertoInput');
+  puertoInputSelect.innerHTML = `<option value="${puertoElegido}">${puertoElegido}</option>`;
+
+  // Proveedores que existen para esa fecha y puerto
+  const proveedorSelect = document.getElementById('proveedor');
+  const q = query(
+    collection(db, 'stockGeneral'),
+    where('puerto', '==', puertoElegido),
+    where('fecha', '==', fechaElegida)
+  );
+  const snap = await getDocs(q);
+  const set = new Set();
+  snap.forEach(doc => set.add(doc.data().proveedor));
+  proveedorSelect.innerHTML = '';
+  set.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p;
+    opt.textContent = p;
+    proveedorSelect.appendChild(opt);
+  });
+  if (set.size === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '(Sin proveedores)';
+    proveedorSelect.appendChild(opt);
+  }
+}
 </script>
 </body>
 </html>
