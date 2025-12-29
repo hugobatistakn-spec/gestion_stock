@@ -8,12 +8,22 @@
   <style>
     :root{ --bg:#f3f6fc; --card:#fff; --primary:#007bff; --text:#222; --muted:#888; }
     [data-theme="dark"]{ --bg:#0f1724; --card:#0b1220; --primary:#60a5fa; --text:#e6eef8; --muted:#9aa7bf; }
-    th:nth-child(4), td:nth-child(4) {
-      font-weight: 600;
-      font-size: 1.1rem;
-      color: #0a5c36;
-      background-color: #d4f8e0;
-    }
+    /* Popup bienvenida – columna 1 (Carrier) */
+.matrix-popup th:nth-child(1),
+.matrix-popup td:nth-child(1) {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #0a5c36;
+  background-color: #d4f8e0;
+}
+
+/* Modal excepciones – columna 4 (Disponible) */
+.excepciones-modal th:nth-child(4),
+.excepciones-modal td:nth-child(4) {
+  font-weight: 600;
+  background-color: #d4f8e0;
+  color: #0a5c36;
+}
     *{box-sizing:border-box} body{font-family:Inter,system-ui; background:var(--bg); color:var(--text); margin:0}
     header{background:var(--primary); color:#fff; padding:1rem 1.25rem; display:flex;align-items:center;justify-content:space-between}
     header h1{margin:0;font-size:1.1rem}
@@ -39,15 +49,317 @@
   </style>
 </head>
 <body>
+
+<!-- POP-UP BIENVENIDA -->
+<div id="popupBienvenida" style="position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;font-family:Inter;">
+  <div style="background:#fff;padding:30px;border-radius:12px;width:95%;max-width:1400px;max-height:80%;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.25);Zoom:0.6;">
+    <h2 style="margin-top:0;color:#007bff;">📋 Reparto Merchant / Carrier Matrix</h2>
+    <table class="matrix-popup" style="width:100%;border-collapse:collapse;font-size:0.75rem;text-align:center;border:1px solid #ccc;">
+      <thead>
+        <tr style="background:#e6f2ff;">
+          <th style="border:1px solid #ccc;">Carrier</th>
+          <th style="border:1px solid #ccc;">VALENCIA</th>
+          <th style="border:1px solid #ccc;">BARCELONA</th>
+          <th style="border:1px solid #ccc;">ALGECIRAS</th>
+          <th style="border:1px solid #ccc;">VIGO/MARIN</th>
+          <th style="border:1px solid #ccc;">BILBAO</th>
+          <th style="border:1px solid #ccc;">GIJÓN</th>
+          <th style="border:1px solid #ccc;">TECO MADRID</th>
+          <th style="border:1px solid #ccc;">TECO ZARAGOZA</th>
+          <th style="border:1px solid #ccc;">TECO VALENCIA/BILBAO</th>
+        </tr>
+      </thead>
+     <tbody>
+  <tr>
+    <td style="border:1px solid #ccc;">MAERSK EXPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">MAERSK IMPORT</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">MSC EXPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN / MEDLOG</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN / MEDLOG</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">MSC IMPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN / MEDLOG</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN / MEDLOG</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN / MEDLOG</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN / MEDLOG</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN / MEDLOG</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN / MEDLOG</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN / MEDLOG</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN / MEDLOG</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">CMA EXPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">CMA IMPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">HAPAG EXPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">HAPAG IMPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">EVERGREEN EXPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">EVERGREEN IMPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">HYUNDAI EXPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">HYUNDAI IMPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">YANG MING EXPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">YANG MING IMPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">ZIM EXPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">ZIM IMPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">ONE EXPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">ONE IMPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">OOCL EXPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">OOCL IMPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">COSCO EXPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #ccc;">COSCO IMPORT</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#FF9F40;color:#000;">KN</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;background:#4CAF50;color:#fff;">CARRIER</td>
+    <td style="border:1px solid #ccc;"></td>
+  </tr>
+</tbody>
+    </table>
+    <p style="margin:12px 0;font-size:0.8rem;color:#666;">
+      <strong>CARRIER</strong> = Tte Carrier | <strong>KN</strong> = Tte Intermodal
+    </p>
+    <div style="text-align:right;margin-top:20px;">
+      <button id="btnCancelarBienvenida" class="alt" style="margin-right:8px;">Cancelar</button>
+      <button id="btnContinuarBienvenida">Continuar</button>
+    </div>
+  </div>
+</div>
 <header>
   <h1>📦 Gestión Intermodal</h1>
   <div style="display:flex;align-items:center;gap:8px">
     <button id="darkToggle" title="Cambiar tema">🌓</button>
     <button id="adminBtn" title="Panel admin" style="background:#222;color:#fff;padding:6px 8px;border-radius:8px">🔒 Admin</button>
+<!-- Botón de matriz (mini) -->
+  <button onclick="document.getElementById('popupBienvenida').style.display='flex'"
+          style="padding:6px 8px;font-size:0.7rem;border-radius:8px;border:1px solid #ccc;background:#222;color:#fff;cursor:pointer;">
+Matrix
+    📋
+  </button>
   </div>
 </header>
 
-<main>
+<main style="display:none">
   <!-- BUSCAR -->
   <div class="card">
   <h3>🔍 Buscar disponibilidad</h3>
@@ -66,7 +378,6 @@
       <button id="btnLimpiarBusqueda" class="alt">🧹 Limpiar</button>
     </div>
   </div>
-  <div class="small hint">Fecha+Puerto → stock general</div>
 </div>
 
   <!-- RESULTADOS -->
@@ -146,7 +457,7 @@
   <div id="modalConfirm" class="hidden" style="position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.55);font-family:Inter;align-items:center;justify-content:center;">
     <div style="background:#fff;margin:auto;padding:25px;border-radius:12px;width:90%;max-width:1200px;height:auto;max-height:80%;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,0.25);zoom:0.8;">
       <h3 style="margin-top:0;color:#007bff;">📌 Excepciones encontradas</h3>
-      <table id="tablaConfirmEx" style="width:100%;border-collapse:collapse;font-size:0.75rem;color:#222;">
+      <table id="tablaConfirmEx" class="excepciones-modal" style="width:100%;border-collapse:collapse;font-size:0.75rem;color:#222;">
         <thead>
           <tr style="background:#e6f2ff;">
             <th style="padding:6px;border:1px solid #ccc;">Cliente</th>
@@ -382,6 +693,8 @@ document.addEventListener('click', async (e) => {
   await buscarYMostrar();
   reservaCard.classList.remove('hidden');   // ⬅️ muestra gestión
   await cargarProveedoresYFijarPuerto();    // ⬅️ llena selects
+// ✅ Copiar fecha seleccionada
+document.getElementById('fechaInput').value = document.getElementById('filtroFecha').value;
 });
 
 btnLimpiarBusqueda.addEventListener('click', () => {
@@ -554,6 +867,34 @@ async function cargarProveedoresYFijarPuerto() {
     proveedorSelect.appendChild(opt);
   }
 }
+/* ---------- POP-UP BIENVENIDA ---------- */
+const popup = document.getElementById('popupBienvenida');
+
+console.log('📦 Script de pop-up cargado'); // ← verifica que el archivo se ejecuta
+
+// Al cargar la página: mostrar pop-up
+window.addEventListener('DOMContentLoaded', () => {
+  console.log('🟢 DOM cargado – mostrando pop-up');
+  popup.classList.remove('hidden');
+});
+
+console.log('📄 Botón Continuar encontrado:', document.getElementById('btnContinuarBienvenida'));
+
+document.getElementById('btnContinuarBienvenida').addEventListener('click', () => {
+  console.log('🔘 Botón Continuar pulsado');
+popup.style.display = 'none';
+  console.log('🫥 Pop-up ocultado');
+
+  // ✅ Mostrar el contenido principal
+  document.querySelector('main').style.display = 'block';
+});
+// Botón Cancelar: cerrar la pestaña (salir de la app)
+document.getElementById('btnCancelarBienvenida').addEventListener('click', () => {
+  console.log('🔴 Botón Cancelar pulsado');
+  window.close();
+  if (!window.closed) alert('Puedes cerrar esta pestaña manualmente.');
+});
+
 </script>
 </body>
 </html>
